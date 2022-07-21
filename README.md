@@ -9,6 +9,8 @@ By Anne Urai, 2022
 ```
 conda create -n ssm_env
 conda activate ssm_env
+conda install cython
+conda install seaborn
 git clone https://github.com/lindermanlab/ssm.git
 cd ssm
 pip install -e .
