@@ -36,6 +36,7 @@ How does this depend on the size of the noise sigma?
 2. fit to real data
     - correlate single-subject beta's with GLM weights
 3. add confidence-scaling (simulate and fit)
+4. compare confidence-betas with R output, and with and without fixing sigma at 0
      
 ### Crazy ideas
 - concatenate all trials across participants, then fit with a switching LDS where the drifting criterion jumps between observers
