@@ -235,7 +235,8 @@ lds.dynamics.Vs = np.array([[np.zeros(inputDim)]])               # input dynamic
 
 # elbos: evidence lower bound (lower bound on the log-likelihood of the data)
 # used to monitor convergence of the EM algorithm
-elbos, q = lds.fit(emissions, inputs = inputs, method="laplace_em",
+elbos, q = lds.fit(emissions, inputs = inputs, 
+                   method="laplace_em",
                     variational_posterior="structured_meanfield", 
                     continuous_optimizer='newton',
                     initialize=True, 

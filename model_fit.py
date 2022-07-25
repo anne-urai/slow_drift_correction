@@ -102,7 +102,7 @@ def initLDSandFit(inputDim, inputs, emissions):
                         continuous_optimizer='newton',
                         initialize=True, 
                         num_init_restarts=1,
-                        num_iters=200, 
+                        num_iters=1000, 
                         alpha=0.1)
 
     # Get the posterior mean of the continuous states (drift)
@@ -113,4 +113,3 @@ def initLDSandFit(inputDim, inputs, emissions):
     predEmissions = np.concatenate(lds.smooth(state_means, emissions, input = inputs))
        
     return predEmissions, estDrift, lds, q, elbos
-
