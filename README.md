@@ -23,7 +23,7 @@ How does this depend on the size of the noise sigma?
 - is there a numerical determinant of ELBO convergence?
 - how many `num_iter` do we need?
 - how do `predEmissions` compare to binary choices?
-- nice to have: printing function (with explanation)?
+- nice to have: plotting function (with explanation)?
 
 ### Questions for Diksha
 - why is `A = 1`?

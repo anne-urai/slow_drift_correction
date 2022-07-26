@@ -16,12 +16,17 @@ import model_fit, simulate_choices #contains the fitting funcs
 
 
 
-ntrial     = [500,1000,2000]
-sens        = [5,10]
-bias        = [0,-2,-4]
-σd          = [0.05,0.2,.5]
+ntrial      = [100, 500, 1000, 5000]
+sens        = [1, 5, 10]
+bias        = [-5, 0, 5]
+sigma_d     = [0, 0.01, 0.05, 0.1]
 pc          = [-1,0,1]
 pe          = [-1,0,1]
+
+print('number of iterations:')
+print(len(ntrial) * len(sens) * len(bias) * len(sigma_d) * len(pc) * len(pe))
+
+# add 200, 500, 1000 n_iter
 
 ntrials         = []
 sens_sim        = []
@@ -39,6 +44,7 @@ pe_fit          = []
 
 inputDim = 3 # observed input dimensions 
 stateDim = 1 # latent states
+count = 0
                         
 for ntrials_lvl in ntrial:
     
@@ -46,7 +52,7 @@ for ntrials_lvl in ntrial:
         
         for bias_lvl in bias:
             
-            for sigma_lvl in σd:
+            for sigma_lvl in sigma_d:
                 
                 for pc_lvl in pc:
                     
@@ -59,6 +65,7 @@ for ntrials_lvl in ntrial:
                         sigma_sim.append(sigma_lvl)
                         pc_sim.append(pc_lvl)
                         pe_sim.append(pe_lvl)
+                        count =+ 1
 
                         # simulate dataset
                         inputs, choices, drift = simulate_choices.simulateChoice(ntrials = ntrials_lvl, 
@@ -66,7 +73,8 @@ for ntrials_lvl in ntrial:
                                                                                   bias = bias_lvl, 
                                                                                   σd = sigma_lvl,
                                                                                   pc = pc_lvl, 
-                                                                                  pe = pe_lvl)
+                                                                                  pe = pe_lvl, 
+                                                                                  seed = count)
                         
                         # fit model
                         predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
@@ -74,6 +82,10 @@ for ntrials_lvl in ntrial:
 
                         state_means = q.mean_continuous_states[0]
                         estDrift = np.squeeze(lds.emissions.Cs)*state_means[:]
+                        
+                        # correlate estdrift with drift
+                        
+                        # compare predEmissions with psychfunc
                         
                         sens_fit.append(lds.emissions.Fs[0][0][0])
                         pc_fit.append(lds.emissions.Fs[0][0][1])
@@ -99,13 +111,21 @@ df_plot = pd.DataFrame(data={'ntrials' : ntrials,
 df_plot.to_csv("parameter_recovery.csv")
 
 
+def myscatter(x, y):
+    
+    # axis equal
+    # scatter
+    # regression
+    
+    # see: https://github.com/anne-urai/2022_Urai_choicehistory_MEG/blob/main/hddmnn_funcs.py#L17
+
 g = sns.PairGrid(df_plot,
                  x_vars=["sens_fit", "bias_fit","sigma_fit","pc_fit","pe_fit"],
                  y_vars=["sens_sim", "bias_sim","sigma_sim","pc_sim","pe_sim"],
                  height=4,
                  hue = "ntrials",
                  palette="Set2")
-g.map(sns.scatterplot)
+g.map(myscatter)
 
 
 
