@@ -35,7 +35,7 @@ def simulateChoice(ntrials,
                 σd = 0.01,        
                 pc=0.,            
                 pe=0.,
-                seed = 5):
+                seed = 1):
     '''simulates choices from a SDT observer with logisitic noise and trial-history effects
     Args:
         ntrials (int): number of trials
