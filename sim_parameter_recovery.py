@@ -44,67 +44,68 @@ pe_fit          = []
 mse             = []
 
 
-inputDim = 3 # observed input dimensions 
+inputDim = 3 # observed input dimensions
 stateDim = 1 # latent states
 count = 0
 
-                        
-for ntrials_lvl in ntrial:
-    
-    for sens_lvl in sens:
-        
-        for bias_lvl in bias:
-            
-            for sigma_lvl in sigma_d:
-                
-                for pc_lvl in pc:
-                    
-                    for pe_lvl in pe:
-                        
-                        count = count + 1
-                        
-                        print("number of iterations to go: " + str(total_iterations - count))
-                        
 
-                        # save true simulation parameters                        
+for ntrials_lvl in ntrial:
+
+    for sens_lvl in sens:
+
+        for bias_lvl in bias:
+
+            for sigma_lvl in sigma_d:
+
+                for pc_lvl in pc:
+
+                    for pe_lvl in pe:
+
+                        count = count + 1
+
+                        print("number of iterations to go: " + str(total_iterations - count))
+
+
+                        # save true simulation parameters
                         ntrials.append(ntrials_lvl)
                         sens_sim.append(sens_lvl)
                         bias_sim.append(bias_lvl)
                         sigma_sim.append(sigma_lvl)
                         pc_sim.append(pc_lvl)
                         pe_sim.append(pe_lvl)
+                        count =+ 1
 
 
                         # simulate dataset
-                        inputs, choices, drift = simulate_choices.simulateChoice(ntrials = ntrials_lvl, 
-                                                                                  sens = sens_lvl, 
-                                                                                  bias = bias_lvl, 
+                        inputs, choices, drift = simulate_choices.simulateChoice(ntrials = ntrials_lvl,
+                                                                                  sens = sens_lvl,
+                                                                                  bias = bias_lvl,
                                                                                   σd = sigma_lvl,
-                                                                                  pc = pc_lvl, 
-                                                                                  pe = pe_lvl, 
+                                                                                  pc = pc_lvl,
+                                                                                  pe = pe_lvl,
                                                                                   seed = count)
-                        
+
                         # fit model
                         predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
                                                                                 inputs, choices)
 
                         state_means = q.mean_continuous_states[0]
                         estDrift = np.squeeze(lds.emissions.Cs)*state_means[:]
-                        
-                        
+
+
                         # Mean squared errors: as a reference: model with 40000 trials had .5717
                         mean_sq_err = sum((drift - estDrift)**2) / ntrials_lvl
                         mse.append(mean_sq_err[0])
-                        
-                        
+
+
                         # compare predEmissions with psychfunc
-                        
+
                         sens_fit.append(lds.emissions.Fs[0][0][0])
                         pc_fit.append(lds.emissions.Fs[0][0][1])
                         pe_fit.append(lds.emissions.Fs[0][0][2])
                         sigma_fit.append(lds.dynamics.Sigmas[0][0][0])
                         bias_fit.append(lds.emissions.ds[0][0])
-            
+
 
 df_plot = pd.DataFrame(data={'ntrials' : ntrials,
                              'mse' : mse,
@@ -127,28 +128,28 @@ df_plot.to_csv("parameter_recovery500_AR1.csv")
 fig, ax = plt.subplots(1,5)
 
 plt.subplots_adjust(left=-.5,
-                    bottom=0.1, 
-                    right=1, 
-                    top=0.9, 
-                    wspace=0.4, 
+                    bottom=0.1,
+                    right=1,
+                    top=0.9,
+                    wspace=0.4,
                     hspace=0.4)
 
 def scatter(x,y,axis):
     p = sns.scatterplot(data=df_plot, x=x, y=y,hue = "ntrials",legend = False,ax=ax[axis])
-    
-    
+
+
     low = min(df_plot[x] + df_plot[y])
     high = max(df_plot[x] + df_plot[y])
-    
+
     llow = low - (abs(high - low)/2)
     hhigh = high + (abs(high - low)/2)
     p.set_ylim(llow, hhigh)
     p.set_xlim(llow, hhigh)
-    
+
     p.set_aspect('equal', adjustable='box')
 
-    # Draw a line of x=y 
-    
+    # Draw a line of x=y
+
     lims = [llow, hhigh]
     p.plot(lims, lims, '-r')
 
@@ -191,8 +192,4 @@ lds.dynamics.Sigmas
 
 lds.emissions.Cs
 lds.emissions.Fs
-lds.emissions.ds 
-
-
-
-
+lds.emissions.ds
