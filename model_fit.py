@@ -97,7 +97,7 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
     lds.dynamics.mu_init = np.zeros((stateDim,stateDim))    # initial mu
     lds.dynamics.Sigmas_init = np.array([[[0.01]]])         # initial sigma
     lds.dynamics.Vs = np.array([[np.zeros(inputDim)]])      # input dynamics
-    
+    lds.dynamics.Sigma = np.zeros(lds.dynamics.Sigma.shape)
     #lds.emissions.Cs = np.ones((stateDim))  #doesn't work
 
 
