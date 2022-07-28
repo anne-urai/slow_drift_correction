@@ -23,38 +23,38 @@ from ssm.init_state_distns import InitialStateDistribution
 class AutoRegressiveNoInput(AutoRegressiveObservations):
     
     def m_step(self, expectations, datas, inputs, masks, tags,
-                   continuous_expectations=None, **kwargs):
+                    continuous_expectations=None, **kwargs):
         
         K, D, M, lags = self.K, self.D, self.M, self.lags
 
         # Collect sufficient statistics
         if continuous_expectations is None:
             ExuxuTs, ExuyTs, EyyTs, Ens = self._get_sufficient_statistics(expectations, 
-                                                                           datas, 
-                                                                           inputs)
+                                                                            datas, 
+                                                                            inputs)
         else:
             ExuxuTs, ExuyTs, EyyTs, Ens = \
-                 self._extend_given_sufficient_statistics(expectations, 
+                  self._extend_given_sufficient_statistics(expectations, 
                                                           continuous_expectations, 
                                                           inputs)
 
         Sigmas = np.zeros((K, D, D))
         for k in range(K):
-             Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
+              Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
 
             # Solve for the MAP estimate of the covariance
-             EWxyT =  Wk @ ExuyTs[k]
-             sqerr = EyyTs[k] - EWxyT.T - EWxyT + Wk @ ExuxuTs[k] @ Wk.T
-             nu = self.nu0 + Ens[k]
-             Sigmas[k] = (sqerr + self.Psi0) / (nu + D + 1)
+              EWxyT =  Wk @ ExuyTs[k]
+              sqerr = EyyTs[k] - EWxyT.T - EWxyT + Wk @ ExuxuTs[k] @ Wk.T
+              nu = self.nu0 + Ens[k]
+              Sigmas[k] = (sqerr + self.Psi0) / (nu + D + 1)
 
         # If any states are unused, set their parameters to a perturbation of a used state
         unused = np.where(Ens < 1)[0]
         used = np.where(Ens > 1)[0]
         if len(unused) > 0:
-             for k in unused:
-                 i = np.choice(used)
-                 Sigmas[k] = Sigmas[i]
+              for k in unused:
+                  i = np.choice(used)
+                  Sigmas[k] = Sigmas[i]
 
         # Update parameters via their setter
         self.Sigmas = Sigmas
@@ -64,14 +64,14 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
 class LDS_noInputDynamics(LDS):
     def __init__(self, N, D, M=0):
         
-        print('M is:')
-        print(M)
+        # print('M is:')
+        # print(M)
         
-        print('N is:')
-        print(N)
+        # print('N is:')
+        # print(N)
         
-        print("D is:")
-        print(D)
+        # print("D is:")
+        # print(D)
         
         dynamics = AutoRegressiveNoInput(1, D, M=M)
         emissions = BernoulliEmissions(N, 1, D, M=M)
@@ -87,7 +87,7 @@ class LDS_noInputDynamics(LDS):
 
 
 #%%
-def initLDSandFit(inputDim, inputs, emissions):
+def initLDSandFit(inputDim, inputs, emissions,n_iters):
     stateDim = 1
     lds = LDS_noInputDynamics(1, 1, M = inputDim)
 
@@ -106,7 +106,7 @@ def initLDSandFit(inputDim, inputs, emissions):
                         continuous_optimizer='newton',
                         initialize=True, 
                         num_init_restarts=1,
-                        num_iters=500, 
+                        num_iters=n_iters, 
                         alpha=0.1)
 
     # Get the posterior mean of the continuous states (drift)
