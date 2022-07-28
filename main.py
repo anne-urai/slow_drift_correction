@@ -16,15 +16,17 @@ simulate = True
 
 #%% simulate choice data
 if simulate:
-    ntrials = 40000 # original code: 40.000
+    ntrials = 5000 # original code: 40.000
     sens = 10
     bias = 0
     σd = 0.05
-    pc, pe = 1, 1
+    pc, pe = 0, 0
+    pc_conf, pe_conf = 1, -1
     
     inputs, choices, drift = simulate_choices.simulateChoice(ntrials, σd = σd, 
                                               sens = sens, bias = bias, 
-                                              pc = pc, pe = pe)
+                                              pc = pc, pe = pe,
+                                              pc_conf = pc_conf, pe_conf = pe_conf)
     '''
     inputs (array): ntrialsx3, first column is stimulus strength, second column is indicator for 
                 post-correct trials (+1 right, -1 left, 0 error) and third column is indicator
@@ -101,9 +103,9 @@ else:  # alternative: load real data
 #%% fit the LDS model
 inputDim = np.shape(inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
-
+n_iters = 200
 predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
-                                                        inputs, choices)
+                                                        inputs, choices,n_iters)
 
 
 #%%% Get the posterior mean of the continuous states (drift)

@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 sigmoid = lambda x: 1 / (1 + np.exp(-x)) # from config.py
- 
+
 #%%
 
 def simDrift(σd, ntrials):
@@ -35,6 +35,8 @@ def simulateChoice(ntrials,
                 σd = 0.01,        
                 pc=0.,            
                 pe=0.,
+                pc_conf=0.,            
+                pe_conf=0.,
                 seed = 1):
     '''simulates choices from a SDT observer with logisitic noise and trial-history effects
     Args:
@@ -58,20 +60,28 @@ def simulateChoice(ntrials,
     np.random.seed(seed)
 
     emissions = []    
-    inputs = np.ones((ntrials, 3)) 
+    inputs = np.ones((ntrials, 5)) 
     drift = simDrift(σd, ntrials)
     inpt =  np.round(np.random.rand(ntrials), decimals = 2)
     rewSide = [True if i > 0.5 else (np.random.rand() < 0.5) if i == 0.5 else False for i in inpt] 
     
-    c, e = 1, 0    
+    c, e, conf_c, conf_e = 1, 0, 1, 0   
     for i in range(ntrials):
         inputs[i,0] = inpt[i]
         inputs[i,1] = c
         inputs[i,2] = e
-        pR = sigmoid(sens*inputs[i,0] + pc*c + pe*e + bias + drift[i])
+        inputs[i,3] = conf_c
+        inputs[i,4] = conf_e
+        
+        pR = sigmoid(sens*inputs[i,0] + pc*c + pe*e + pc_conf*conf_c + pe_conf*conf_e + bias + drift[i])
         choice = np.random.rand() < pR
-        c = (2*choice - 1)*(choice == rewSide[i]) 
-        e = (2*choice - 1)*(choice != rewSide[i]) 
+        
+        c = (2*choice - 1)*(choice == rewSide[i])
+        e = (2*choice - 1)*(choice != rewSide[i])
+        
+        conf_c = c * (2 * np.abs(pR - .5))
+        conf_e = e * (2 * np.abs(pR - .5))
+        
         emissions.append(choice*1)   
             
     return inputs, np.array(emissions), drift 
