@@ -110,7 +110,6 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
                         num_iters=n_iters, 
                         alpha=0.1)
 
-    
     # Get the posterior mean of the continuous states (drift)
     state_means = q.mean_continuous_states[0]
     estDrift = np.squeeze(lds.emissions.Cs)*state_means[:]
