@@ -24,13 +24,18 @@ pip install -e .
 - how many `num_iter` do we need?
 - how do `predEmissions` compare to binary choices?
 - nice to have: printing function (with explanation of parameters)?
+- does it matter that some trials are deleted due to timed-out responses?
+- what if simulated drift has a AR coef lower than .9995, can the model still account for this given that a random walk being imposed?
 
 ### Questions for Diksha
-- why is `A = 1`, rather than estimated (while fitting `C`)?
+- why is `A = 1`, rather than estimated (while fitting `C`)? Because now a random walk is imposed
 - how is the analytical computation of sigma done? why analytical 
 (estimated sigma seems to explode with higher number of trials -  insert image)?
+- how to interpret C and sigma? 
 - why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
+- would analysis would with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
 - why all these functions with `noInput` and not use the default function of the package?
+- why is drift mean centered in data simulation?
 
 ### Plan van aanpak
 1. [ ] answer: with our trial counts, can we even expect to get good fits?
