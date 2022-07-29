@@ -28,36 +28,36 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
         K, D, M, lags = self.K, self.D, self.M, self.lags
 
         # Collect sufficient statistics
-        # if continuous_expectations is None:
-        #     ExuxuTs, ExuyTs, EyyTs, Ens = self._get_sufficient_statistics(expectations, 
-        #                                                                     datas, 
-        #                                                                     inputs)
-        # else:
-        #     ExuxuTs, ExuyTs, EyyTs, Ens = \
-        #           self._extend_given_sufficient_statistics(expectations, 
-        #                                                   continuous_expectations, 
-        #                                                   inputs)
+        if continuous_expectations is None:
+            ExuxuTs, ExuyTs, EyyTs, Ens = self._get_sufficient_statistics(expectations, 
+                                                                            datas, 
+                                                                            inputs)
+        else:
+            ExuxuTs, ExuyTs, EyyTs, Ens = \
+                  self._extend_given_sufficient_statistics(expectations, 
+                                                          continuous_expectations, 
+                                                          inputs)
 
-        # Sigmas = np.zeros((K, D, D))
-        # for k in range(K):
-        #       Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
+        Sigmas = np.zeros((K, D, D))
+        for k in range(K):
+              Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
 
-        #     # Solve for the MAP estimate of the covariance
-        #       EWxyT =  Wk @ ExuyTs[k]
-        #       sqerr = EyyTs[k] - EWxyT.T - EWxyT + Wk @ ExuxuTs[k] @ Wk.T
-        #       nu = self.nu0 + Ens[k]
-        #       Sigmas[k] = (sqerr + self.Psi0) / (nu + D + 1)
+            # Solve for the MAP estimate of the covariance
+              EWxyT =  Wk @ ExuyTs[k]
+              sqerr = EyyTs[k] - EWxyT.T - EWxyT + Wk @ ExuxuTs[k] @ Wk.T
+              nu = self.nu0 + Ens[k]
+              Sigmas[k] = (sqerr + self.Psi0) / (nu + D + 1)
 
-        # # If any states are unused, set their parameters to a perturbation of a used state
-        # unused = np.where(Ens < 1)[0]
-        # used = np.where(Ens > 1)[0]
-        # if len(unused) > 0:
-        #       for k in unused:
-        #           i = np.choice(used)
-        #           Sigmas[k] = Sigmas[i]
+        # If any states are unused, set their parameters to a perturbation of a used state
+        unused = np.where(Ens < 1)[0]
+        used = np.where(Ens > 1)[0]
+        if len(unused) > 0:
+              for k in unused:
+                  i = np.choice(used)
+                  Sigmas[k] = Sigmas[i]
 
-        # # Update parameters via their setter
-        # self.Sigmas = Sigmas
+        # Update parameters via their setter
+        self.Sigmas = Sigmas
         
 
 # ToDo: merge below?
@@ -98,8 +98,13 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
     lds.dynamics.Sigmas_init = np.array([[[0.01]]])         # initial sigma
     lds.dynamics.Vs = np.array([[np.zeros(inputDim)]])      # input dynamics
     
+    # if model shouldn't fit slow drift then: 
+    #lds.dynamics.Sigmas_init = np.array([[[0]]])         # initial sigma
+    #lds.dynamics.Sigmas = np.zeros(lds.dynamics.Sigmas.shape)
+
     
-    lds.dynamics.Sigmas = np.zeros(lds.dynamics.Sigmas.shape)
+    
+
     #lds.emissions.Cs = np.ones((stateDim))  #doesn't work
 
     elbos, q = lds.fit(emissions, inputs = inputs, method="laplace_em",

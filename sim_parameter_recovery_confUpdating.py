@@ -18,16 +18,16 @@ import model_fit, simulate_choices #contains the fitting funcs
 # simulated with slow drift, conf, fitting slow drift, conf
 # 1111 means simulated with slow drift and conf updating, and both are also fitted
 
-n_datasets = 15
+n_datasets = 1
 
 ntrial      = 500
 n_iter      = 50
 sens        = 10
-bias        = -5
+bias        = -sens/2
 sigma_d     = 0
-w_prevresp  = 1
+w_prevresp  = 0
 w_prevconf  = 0
-w_prevconfprevresp = 1
+w_prevconfprevresp = 0
 
 
 ntrials                = []
@@ -126,7 +126,7 @@ df_plot = pd.DataFrame(data={'ntrials' : ntrials,
 
 
 
-df_plot.to_csv("parameter_recoveryConf_0111.csv")
+#df_plot.to_csv("parameter_recoveryConf_1001_largerSigma_lowerSens_init0.csv")
 
 
 

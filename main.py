@@ -12,7 +12,7 @@ import seaborn as sns
 
 # to build our model
 import model_fit, simulate_choices #contains the fitting funcs
-simulate = True
+simulate = False
 
 #%% simulate choice data
 if simulate:
@@ -40,25 +40,22 @@ if simulate:
     drift (array): ntrialsx1, mean centered 
     '''
 else:  # alternative: load real data
-    # from https://figshare.com/articles/dataset/Choice_history_biases_subsequent_evidence_accumulation/7268558/2?file=13593227
-    data = pd.read_csv('https://figshare.com/ndownloader/files/13593227')
-    # print(data.columns) # we'll use prevpupil as a stand-in for prevconfidence
-    df = data[data.subj_idx == 1] # pick one subject
-    
-    # extract the trial-by-trial stimulus strength
-    stim_strength = (df.coherence * df.stimulus).to_numpy() # or df.motionenergy
-    # scale between 0 and 1, to match Gupta simulateChoice output
-    stim_strength = (stim_strength-stim_strength.min())/(stim_strength.max()-stim_strength.min())
 
-    # separate in post-correct trials
-    prevchoice_correct = np.asarray([df.prevresp[t] if df.prevresp[t] == df.prevstim[t] 
-                                     else 0 for t in range(len(df.prevresp))])
-    prevchoice_error = np.asarray([df.prevresp[t] if df.prevresp[t] != df.prevstim[t] 
-                                   else 0 for t in range(len(df.prevresp))])
+    data = pd.read_csv('df_slowdrift_correction.csv')
+    print(data.columns)
+    
+    
+    #df = data[data.subj == 1] # pick one subject
+    df = data
+    
+    evidence = df.evidence.to_numpy() # scaled between 0 and 1 (with 0 being left evidence, 1 right evidence, .5 would be ambigious no evidence trial)
+    prevresp = df.prevresp.to_numpy()
+    prevconf = df.prevconf.to_numpy()
+    prevrespconf = df.prevrespconf.to_numpy()
     
     # this is the format that the fitting func needs - vstack as np arrays
-    inputs = np.vstack([stim_strength, prevchoice_correct, prevchoice_error]).T
-    choices = np.vstack(np.asarray(df.response.tolist()).T)
+    inputs = np.vstack([evidence, prevresp, prevconf, prevrespconf]).T
+    choices = np.vstack(np.asarray(df.resp.tolist()).T)
 
 
 #%% instead, spell out what's happening
@@ -107,7 +104,7 @@ else:  # alternative: load real data
 #%% fit the LDS model
 inputDim = np.shape(inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
-n_iters = 50
+n_iters = 500
 predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
                                                         inputs, choices,n_iters)
 
