@@ -27,8 +27,7 @@ def simDrift(σd, ntrials):
         drift[i] = σd*np.random.randn() + 0.9995*drift[i-1]  if i>0 else σd*np.random.randn()
     return drift - np.mean(drift)   
     
-
-
+#%%
 def simulateChoice(ntrials,    
                 sens = 10.,       
                 bias = -5.,       
@@ -80,6 +79,7 @@ def simulateChoice(ntrials,
     return inputs, np.array(emissions), drift 
 
 
+#%%
 
 def simulateChoiceConf(ntrials,    
                 sens = 10.,       
@@ -138,10 +138,7 @@ def simulateChoiceConf(ntrials,
 
 
 
-
-
-
-
+#%%
 def simulateChoiceRespConf(ntrials,    
                 sens = 10.,       
                 bias = -5.,       
@@ -197,5 +194,66 @@ def simulateChoiceRespConf(ntrials,
         
         
         emissions.append(choice*1)  
+        
+    return inputs, np.array(emissions), drift   
+
+
+#%%
+
+def simulateChoiceRespConfEvi(ntrials,    
+                        sens = 10.,     
+                        bias = -5.,    
+                        σd = 0.01,     
+                        w_prevresp = 0., # if positive: tendency to repeat, if negative: tendency to alternate
+                        w_prevconf = 0.,
+                        w_prevconfprevresp = 0.,
+                        w_prevsignevi = 0.,
+                        w_prevabsevi = 0.,
+                        w_prevsignevi_prevabsevi = 0.,
+                        seed = 1):
+
+    
+    np.random.seed(seed)
+    
+    emissions = [] #responses
+    inputs = np.ones((ntrials, 7)) #are used as observed variables to fit the model
+    drift = simDrift(σd, ntrials) 
+    inpt =  np.round(np.random.rand(ntrials), decimals = 2) #stimulus
+    rewSide = [True if i > 0.5 else (np.random.rand() < 0.5) if i == 0.5 else False for i in inpt] #determine which response would be correct
+    
+    prevresp, prevconf, prevresp_prevconf, prevsignevi, prevabsevi, prevsignevi_prevabsevi = 0, 0, 0, 0, 0, 0
+    for i in range(ntrials):
+        inputs[i,0] = inpt[i]
+        inputs[i,1] = prevresp 
+        inputs[i,2] = prevconf
+        inputs[i,3] = prevresp_prevconf
+        inputs[i,4] = prevsignevi
+        inputs[i,5] = prevabsevi
+        inputs[i,6] = prevsignevi_prevabsevi
+    
+        # chance of right response
+        pR = sigmoid(bias +
+                     sens*inputs[i,0] + 
+                     w_prevresp*prevresp + # if previous response is -1, and the weight is positive (attractive effect)
+                                           # then this will cause a lower chance of a right response
+                     w_prevconf*prevconf + 
+                     w_prevconfprevresp*prevresp_prevconf +
+                     w_prevsignevi * prevsignevi +
+                     w_prevabsevi * prevabsevi +
+                     w_prevsignevi_prevabsevi * prevsignevi_prevabsevi + 
+                     drift[i])
+        
+        # draw from bernoulli with probability right response
+        choice = np.random.rand() < pR
+        
+    
+        prevresp = (2*choice - 1) # +1 right, -1 left
+        prevconf = (2 * np.abs(pR - .5)) if choice == rewSide[i] else (-2 * np.abs(pR - .5)) # between -1 and 1 with 0 being guess level
+        prevresp_prevconf = prevresp * prevconf # interaction between prevresp and prevconf
+        prevsignevi = -1 if inpt[i] < .50 else 1
+        prevabsevi = np.abs(inpt[i] - .50)
+        prevsignevi_prevabsevi = prevsignevi * prevabsevi
+        
+        emissions.append(choice*1)   
         
     return inputs, np.array(emissions), drift   

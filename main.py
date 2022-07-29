@@ -48,13 +48,16 @@ else:  # alternative: load real data
     #df = data[data.subj == 1] # pick one subject
     df = data
     
-    evidence = df.evidence.to_numpy() # scaled between 0 and 1 (with 0 being left evidence, 1 right evidence, .5 would be ambigious no evidence trial)
-    prevresp = df.prevresp.to_numpy()
-    prevconf = df.prevconf.to_numpy()
-    prevrespconf = df.prevrespconf.to_numpy()
+    evidence = df.evidence.to_numpy() # scaled between -1 and 1 (with -1 being left evidence, 1 right evidence, 0 would be ambigious no evidence trial)
+    prevresp = df.prevresp.to_numpy() # -1 left, 1 right
+    prevconf = df.prevconf.to_numpy() # continuous scale between -1 and 1, -1 sure error, 1 sure correct, 0 guess
+    prevrespconf = df.prevrespconf.to_numpy() # interaction between prevreso and prevconf
+    prevsignevi = df.prevsignevi.to_numpy() # -1 left, 1 right
+    prevabsevi = df.prevabsevi.to_numpy() # continuous scale between 0 and 1 with 0 being no evidence and 1 maximal evidence
+    prevsignabsevi = df.prevsignabsevi.to_numpy() # interaction prevsign and prevabsevi
     
     # this is the format that the fitting func needs - vstack as np arrays
-    inputs = np.vstack([evidence, prevresp, prevconf, prevrespconf]).T
+    inputs = np.vstack([evidence, prevresp, prevconf, prevrespconf, prevsignevi, prevabsevi, prevsignabsevi]).T
     choices = np.vstack(np.asarray(df.resp.tolist()).T)
 
 
@@ -112,7 +115,7 @@ predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
 #%%% Get the posterior mean of the continuous states (drift)
 
 '''
-You are totally right, sigma_d is the parameter that determines the degree to which the random 
+Gupta: sigma_d is the parameter that determines the degree to which the random 
 noise is added to the signal. To infer the specific changes in slow drift from trial-to-trial, 
 we need to estimate the conditional posterior density of the latent variable x_{t} aka drift 
 given the observed choices y_{1...T}  - i.e. p(x_t | y_{1...T}). This operation is often called 
@@ -142,7 +145,7 @@ sns.despine()
 # does the simulated drift match the predicted drift?
 fig, axs = plt.subplots(1, 1, figsize=(12,4))
 axs.axhline(0, c = "k", ls = ":", lw =2)
-axs.plot(drift[:], "k", label = "Generative drift")
+#axs.plot(drift[:], "k", label = "Generative drift")
 axs.plot(estDrift[:], c = 'firebrick', label = "Estimated drift")
 axs.set(xlabel = "Trials", ylabel = "Decision criterion")
 axs.legend(loc='upper right')
@@ -153,11 +156,12 @@ lds.dynamics.As
 lds.dynamics.Vs
 lds.dynamics.b
 lds.dynamics.mu_init
+lds.dynamics.Sigmas_init
 lds.dynamics.Sigmas
 
 lds.emissions.Cs
 lds.emissions.Fs
-lds.emissions.ds 
+lds.emissions.ds # note: positive bias indicates an overall bias towards right responses
 #%% save a clear and helpful fig
 
 

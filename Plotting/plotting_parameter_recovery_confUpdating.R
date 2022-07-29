@@ -13,7 +13,7 @@ df <- read_csv("parameter_recoveryConf_1001_largerSigma_init0.csv")
 p_sens <- ggplot(df, aes(x=as.factor(sens_sim), y=sens_fit)) +
   geom_point(col = "blue",position = position_dodge(0.1)) +
   theme_bw() +
-  ylim(c(5,15)) +
+  #ylim(c(5,15)) +
   geom_hline(yintercept=df$sens_sim) +
   xlab("sens_sim") +
   theme(legend.position="none")
@@ -52,7 +52,7 @@ p_resp <- ggplot(df, aes(x=as.factor(prevresp_sim), y=prevresp_fit)) +
 p_conf <- ggplot(df, aes(x=as.factor(prevconf_sim), y=prevconf_fit)) +
   geom_point(col = "blue",position = position_dodge(.1)) +
   theme_bw() +
-  ylim(c(-2,2)) +
+  #ylim(c(-2,2)) +
   geom_hline(yintercept=df$prevconf_sim) +
   xlab("prevconf_sim") +
   theme(legend.position="none")

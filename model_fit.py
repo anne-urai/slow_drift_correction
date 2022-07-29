@@ -22,6 +22,8 @@ from ssm.init_state_distns import InitialStateDistribution
 
 class AutoRegressiveNoInput(AutoRegressiveObservations):
     
+    # Analytical estimation of sigma_d
+    
     def m_step(self, expectations, datas, inputs, masks, tags,
                     continuous_expectations=None, **kwargs):
         
@@ -60,7 +62,6 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
         self.Sigmas = Sigmas
         
 
-# ToDo: merge below?
 class LDS_noInputDynamics(LDS):
     def __init__(self, N, D, M=0):
         
@@ -90,6 +91,8 @@ class LDS_noInputDynamics(LDS):
 def initLDSandFit(inputDim, inputs, emissions,n_iters):
     stateDim = 1
     lds = LDS_noInputDynamics(1, 1, M = inputDim)
+    
+    # note: everything that is not specified (in this case Cs, d, F, and sigma) is fitted
     
     # Wouldn't it be better to estimate A (instead of fixing it at 1), and fix Cs to 1?
     lds.dynamics.A = np.ones((stateDim,stateDim))           # dynamics
