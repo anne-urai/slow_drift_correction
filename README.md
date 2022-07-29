@@ -49,3 +49,12 @@ pip install -e .
 - concatenate all trials across participants, then fit with a switching LDS where the drifting criterion jumps between observers
 - what if the frequency of the slow drift wave changes over time? eg faster oscillations over time, problem because we only fit one AR coef?
 - how does the fitting behave if sigma is not estimated analytically?
+
+### To do
+- write summary of this week's work
+    - describe model
+    - describe code structure
+    - discuss simulation findings
+    - overview open questions
+- design matrix predictors
+- plotting psychometric functions
