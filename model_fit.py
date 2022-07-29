@@ -28,36 +28,36 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
         K, D, M, lags = self.K, self.D, self.M, self.lags
 
         # Collect sufficient statistics
-        if continuous_expectations is None:
-            ExuxuTs, ExuyTs, EyyTs, Ens = self._get_sufficient_statistics(expectations, 
-                                                                            datas, 
-                                                                            inputs)
-        else:
-            ExuxuTs, ExuyTs, EyyTs, Ens = \
-                  self._extend_given_sufficient_statistics(expectations, 
-                                                          continuous_expectations, 
-                                                          inputs)
+        # if continuous_expectations is None:
+        #     ExuxuTs, ExuyTs, EyyTs, Ens = self._get_sufficient_statistics(expectations, 
+        #                                                                     datas, 
+        #                                                                     inputs)
+        # else:
+        #     ExuxuTs, ExuyTs, EyyTs, Ens = \
+        #           self._extend_given_sufficient_statistics(expectations, 
+        #                                                   continuous_expectations, 
+        #                                                   inputs)
 
-        Sigmas = np.zeros((K, D, D))
-        for k in range(K):
-              Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
+        # Sigmas = np.zeros((K, D, D))
+        # for k in range(K):
+        #       Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
 
-            # Solve for the MAP estimate of the covariance
-              EWxyT =  Wk @ ExuyTs[k]
-              sqerr = EyyTs[k] - EWxyT.T - EWxyT + Wk @ ExuxuTs[k] @ Wk.T
-              nu = self.nu0 + Ens[k]
-              Sigmas[k] = (sqerr + self.Psi0) / (nu + D + 1)
+        #     # Solve for the MAP estimate of the covariance
+        #       EWxyT =  Wk @ ExuyTs[k]
+        #       sqerr = EyyTs[k] - EWxyT.T - EWxyT + Wk @ ExuxuTs[k] @ Wk.T
+        #       nu = self.nu0 + Ens[k]
+        #       Sigmas[k] = (sqerr + self.Psi0) / (nu + D + 1)
 
-        # If any states are unused, set their parameters to a perturbation of a used state
-        unused = np.where(Ens < 1)[0]
-        used = np.where(Ens > 1)[0]
-        if len(unused) > 0:
-              for k in unused:
-                  i = np.choice(used)
-                  Sigmas[k] = Sigmas[i]
+        # # If any states are unused, set their parameters to a perturbation of a used state
+        # unused = np.where(Ens < 1)[0]
+        # used = np.where(Ens > 1)[0]
+        # if len(unused) > 0:
+        #       for k in unused:
+        #           i = np.choice(used)
+        #           Sigmas[k] = Sigmas[i]
 
-        # Update parameters via their setter
-        self.Sigmas = Sigmas
+        # # Update parameters via their setter
+        # self.Sigmas = Sigmas
         
 
 # ToDo: merge below?
@@ -90,16 +90,17 @@ class LDS_noInputDynamics(LDS):
 def initLDSandFit(inputDim, inputs, emissions,n_iters):
     stateDim = 1
     lds = LDS_noInputDynamics(1, 1, M = inputDim)
-
-    # It would be better to estimate A (instead of fixing it at 1), and fix Cs to 1
+    
+    # Wouldn't it be better to estimate A (instead of fixing it at 1), and fix Cs to 1?
     lds.dynamics.A = np.ones((stateDim,stateDim))           # dynamics
     lds.dynamics.b = np.zeros(stateDim)                     # bias
     lds.dynamics.mu_init = np.zeros((stateDim,stateDim))    # initial mu
     lds.dynamics.Sigmas_init = np.array([[[0.01]]])         # initial sigma
     lds.dynamics.Vs = np.array([[np.zeros(inputDim)]])      # input dynamics
-    lds.dynamics.Sigma = np.zeros(lds.dynamics.Sigma.shape)
+    
+    
+    lds.dynamics.Sigmas = np.zeros(lds.dynamics.Sigmas.shape)
     #lds.emissions.Cs = np.ones((stateDim))  #doesn't work
-
 
     elbos, q = lds.fit(emissions, inputs = inputs, method="laplace_em",
                         variational_posterior="structured_meanfield", 
@@ -109,6 +110,7 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
                         num_iters=n_iters, 
                         alpha=0.1)
 
+    
     # Get the posterior mean of the continuous states (drift)
     state_means = q.mean_continuous_states[0]
     estDrift = np.squeeze(lds.emissions.Cs)*state_means[:]

@@ -23,6 +23,7 @@ sigma_d     = [0, 0.01, 0.05, 0.1]
 pc          = [-1,0,1]
 pe          = [-1,0,1]
 
+
 total_iterations = len(ntrial) * len(sens) * len(bias) * len(sigma_d) * len(pc) * len(pe)
 print('number of iterations: ' + str(total_iterations))
 

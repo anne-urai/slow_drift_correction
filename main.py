@@ -16,17 +16,21 @@ simulate = True
 
 #%% simulate choice data
 if simulate:
-    ntrials = 5000 # original code: 40.000
+    ntrials = 500 # original code: 40.000
     sens = 10
-    bias = 0
-    σd = 0.05
-    pc, pe = 0, 0
-    pc_conf, pe_conf = 1, -1
+    bias = -5 # -5 is unbiased
+    σd = 0.1
+    w_prevresp = 1
+    w_prevconf = 0
+    w_prevconfprevresp = 1
     
-    inputs, choices, drift = simulate_choices.simulateChoice(ntrials, σd = σd, 
+    inputs, choices, drift = simulate_choices.simulateChoiceRespConf(ntrials, σd = σd, 
                                               sens = sens, bias = bias, 
-                                              pc = pc, pe = pe,
-                                              pc_conf = pc_conf, pe_conf = pe_conf)
+                                              w_prevresp = w_prevresp, 
+                                              w_prevconf = w_prevconf,
+                                              w_prevconfprevresp = w_prevconfprevresp)
+    
+                    
     '''
     inputs (array): ntrialsx3, first column is stimulus strength, second column is indicator for 
                 post-correct trials (+1 right, -1 left, 0 error) and third column is indicator
@@ -103,7 +107,7 @@ else:  # alternative: load real data
 #%% fit the LDS model
 inputDim = np.shape(inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
-n_iters = 200
+n_iters = 50
 predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
                                                         inputs, choices,n_iters)
 
@@ -141,8 +145,8 @@ sns.despine()
 # does the simulated drift match the predicted drift?
 fig, axs = plt.subplots(1, 1, figsize=(12,4))
 axs.axhline(0, c = "k", ls = ":", lw =2)
-axs.plot(drift[:1000], "k", label = "Generative drift")
-axs.plot(estDrift[:1000], c = 'firebrick', label = "Estimated drift")
+axs.plot(drift[:], "k", label = "Generative drift")
+axs.plot(estDrift[:], c = 'firebrick', label = "Estimated drift")
 axs.set(xlabel = "Trials", ylabel = "Decision criterion")
 axs.legend(loc='upper right')
 
@@ -158,3 +162,10 @@ lds.emissions.Cs
 lds.emissions.Fs
 lds.emissions.ds 
 #%% save a clear and helpful fig
+
+
+
+
+
+
+
