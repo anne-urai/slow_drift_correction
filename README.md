@@ -30,8 +30,8 @@ pip install -e .
 ### Questions for Diksha
 - why is `A = 1`, rather than estimated (while fitting `C`)? Because now a random walk is imposed
 - how is the analytical computation of sigma done? why analytical 
-(estimated sigma seems to explode with higher number of trials -  insert image)?
-- how to interpret C and sigma? 
+(estimated sigma seems to explode with higher number of trials -  insert image)? 
+- how to interpret `C` (sometimes negative) and `sigma`? 
 - why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
 - would analysis would with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
 - why all these functions with `noInput` and not use the default function of the package?
@@ -45,6 +45,7 @@ pip install -e .
     - [ ] correlate single-subject beta's with GLM weights
 4. [ ] compare confidence-betas with R output, and with and without fixing sigma at 0
 
-### Crazy ideas
+### Next ideas
 - concatenate all trials across participants, then fit with a switching LDS where the drifting criterion jumps between observers
 - what if the frequency of the slow drift wave changes over time? eg faster oscillations over time, problem because we only fit one AR coef?
+- how does the fitting behave if sigma is not estimated analytically?
