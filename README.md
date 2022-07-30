@@ -79,5 +79,5 @@ Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)
 
 Y_t is then transformed by a logistic function (1/1+exp(-Y_t)) and represents the probability of a 'right' response in a Bernoulli model.
 
-![](recovery_ntrials_niters_AR1.png)
+![](recovery_ntrials_niters_AR1.PNG)
  
