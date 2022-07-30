@@ -30,7 +30,7 @@ pip install -e .
 ### Questions for Diksha
 - why is `A = 1`, rather than estimated (while fitting `C`)? Because now a random walk is imposed
 - how is the analytical computation of sigma done? why analytical 
-(estimated sigma seems to explode with higher number of trials -  insert image)? 
+(estimated sigma seems to increase with higher number of trials -  insert image)? 
 - how to interpret `C` (sometimes negative) and `sigma`? 
 - why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
 - would analysis would with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
@@ -38,10 +38,10 @@ pip install -e .
 - why is drift mean centered in data simulation?
 
 ### Plan van aanpak
-1. [ ] answer: with our trial counts, can we even expect to get good fits?
+1. [x] answer: with our trial counts, can we even expect to get good fits?
      - [x] try simulations with data-ish parameters
-2. [ ] add confidence-scaling (use previous R simulations and fit with ntrials = 500)
-3. [ ] fit to real data from Beehives or Squircles task
+2. [x] add confidence-scaling (use previous R simulations and fit with ntrials = 500)
+3. [x] fit to real data from Beehives or Squircles task
     - [ ] correlate single-subject beta's with GLM weights
 4. [ ] compare confidence-betas with R output, and with and without fixing sigma at 0
 
@@ -51,19 +51,33 @@ pip install -e .
 - how does the fitting behave if sigma is not estimated analytically?
 
 ### To do
-- write summary of this week's work
-    - describe model
-    - describe code structure
-    - discuss simulation findings
-    - overview open questions
 - design matrix predictors
 - plotting psychometric functions
 
 
 ### Summary
 
-$x_{t} = Ax_{t-1}
 
-\sum_{\forall i}{x_i^{2}}
+Following simple linear dynamical system (LDS) is used to disentangle slow drifts from systematic updating:
 
+X_t = AX_t-1 + VU_t + b + w_t with w_t ~ N(0,sigma_d)
+Y_t = CX_t + FU_t + d
+
+- `X_t` is a latent process (i.e. the slow drift) and follows an AR(1) process.
+- `U_t` is a matrix and contains observed variables that can influence the latent process
+- `b` is a bias, or intercept
+- `Y_t` represents the (observed) emissions
+- `U_t` is a matrix and contains observed variables that can influence the emissions
+    - stimulus strenght, previous confidence, previous response...
+- `d` is a bias, or intercept
+
+A is fixed to 1, imposing a random walk. V and b are fixed to 0, and sigma is estimated analytically.
+The other parameters are estimated using the Expectation-Maximization algorithm (EM).
+
+With these parameters the model can be rewritten as:
+Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)
+
+Y_t is then transformed by a logistic function (1/1+exp(-Y_t)) and represents the probability of a 'right' response in a Bernoulli model.
+
+![](recovery_ntrials_niters_AR1.PNG)
  
