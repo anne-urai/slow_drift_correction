@@ -62,4 +62,8 @@ pip install -e .
 
 ### Summary
 
-$x_{t} = Ax_{t-1} 
+$x_{t} = Ax_{t-1}
+
+\sum_{\forall i}{x_i^{2}}
+
+ 
