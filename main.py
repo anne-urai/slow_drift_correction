@@ -108,8 +108,7 @@ else:  # alternative: load real data
 inputDim = np.shape(inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
 n_iters = 500
-predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,
-                                                        inputs, choices,n_iters)
+predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,inputs, choices,n_iters)
 
 
 #%%% Get the posterior mean of the continuous states (drift)

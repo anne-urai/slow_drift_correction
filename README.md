@@ -33,7 +33,7 @@ pip install -e .
 (estimated sigma seems to increase with higher number of trials -  insert image)? 
 - how to interpret `C` (sometimes negative) and `sigma`? 
 - why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
-- would analysis would with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
+- would analysis work with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
 - why all these functions with `noInput` and not use the default function of the package?
 - why is drift mean centered in data simulation?
 
@@ -57,6 +57,7 @@ pip install -e .
 
 ### Summary
 
+#### Model
 
 Following simple linear dynamical system (LDS) is used to disentangle slow drifts from systematic updating:
 
@@ -80,6 +81,7 @@ Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)
 
 Y_t is then transformed by a logistic function (1/1+exp(-Y_t)) and represents the probability of a 'right' response in a Bernoulli model.
 
+#### Simulations: ntrials and niters
 
 Simulations showed good parameter recovery, even for datasets with low number of trials (n=500).
 Results were relatively stable over different values of iterations. 
@@ -88,7 +90,8 @@ However, for sigma we see that (1) it increases with the number of trials, (2) i
 
 ![](recovery_ntrials_niters_AR1.PNG)
  
- 
+
+#### Simulations: systematic updating
 (gonna improve these simulations and plots later)
 
 If we simulate data with slow drifts and systematic updating of previous response, confidence, sign evidence and absolute evidence we see a nice recovery when the model fits both slow drifts and systematic updating.
@@ -96,5 +99,18 @@ Especially given the fact that this is only with 500 trials (still going to chec
 ![](parameter_recoveryConfEvidence_1111.PNG)
 
 
-If we simulate data with only slow drifts, and the model is only allowed to estimate systematic updating, then we see these apparent updating strategies.
+#### Simulations: apparent systematic updating
+
+If we simulate data with only slow drifts, and the model is only allowed to estimate systematic updating, then we see these apparent updating strategies. This replicates the earlier simulations in R.
 ![](parameter_recoveryConfEvidence_1001.PNG)
+
+#### Fitting to real data
+If we fit the model to real data (beehives task) we see that the model converged nicely. 
+![](convergence_beehives.png)
+
+This is the estimated slow drift (sudden jumps probably due to switches over participants?)
+![](slowdrift_beehives.png)
+
+These are the estimates for the systematic updating.
+In this order: sensitivity, prev resp, prev conf, prevresp*prevconf, prev sign evidence, prev abs evidence, prevsign*prevabsevi
+![](params.PNG)

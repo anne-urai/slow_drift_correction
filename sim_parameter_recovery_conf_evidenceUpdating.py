@@ -14,13 +14,13 @@ import seaborn as sns
 import model_fit, simulate_choices #contains the fitting funcs
 
 
-n_datasets = 20
+n_datasets = 25
 
-ntrial      = 5000
-n_iter      = 50
-sens        = 10
+ntrial      = 500
+n_iter      = 200
+sens        = 8
 bias        = -sens/2 #unbiased
-sigma_d     = 0.1
+sigma_d     = 0.2
 w_prevresp, w_prevconf, w_prevconfprevresp = 1, 0, 1
 w_prevsignevi, w_prevabsevi, w_prevsignevi_prevabsevi = -1, 0, -1
 
@@ -34,8 +34,8 @@ sigma_sim              = []
 prevresp_sim           = []
 prevconf_sim           = []
 prevconfprevresp_sim   = []
-prevsignevi_sim           = []
-prevabsevi_sim           = []
+prevsignevi_sim        = []
+prevabsevi_sim         = []
 prevsignevi_prevabsevi_sim   = []
 
 
