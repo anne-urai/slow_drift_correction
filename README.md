@@ -61,6 +61,7 @@ pip install -e .
 Following simple linear dynamical system (LDS) is used to disentangle slow drifts from systematic updating:
 
 X_t = AX_t-1 + VU_t + b + w_t with w_t ~ N(0,sigma_d)
+
 Y_t = CX_t + FU_t + d
 
 - `X_t` is a latent process (i.e. the slow drift) and follows an AR(1) process.
@@ -79,5 +80,21 @@ Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)
 
 Y_t is then transformed by a logistic function (1/1+exp(-Y_t)) and represents the probability of a 'right' response in a Bernoulli model.
 
+
+Simulations showed good parameter recovery, even for datasets with low number of trials (n=500).
+Results were relatively stable over different values of iterations. 
+However, for sigma we see that (1) it increases with the number of trials, (2) it decreases with the number of iterations?
+
+
 ![](recovery_ntrials_niters_AR1.PNG)
  
+ 
+(gonna improve these simulations and plots later)
+
+If we simulate data with slow drifts and systematic updating of previous response, confidence, sign evidence and absolute evidence we see a nice recovery when the model fits both slow drifts and systematic updating.
+Especially given the fact that this is only with 500 trials (still going to check how this is for more trials)
+![](parameter_recoveryConfEvidence_1111.PNG)
+
+
+If we simulate data with only slow drifts, and the model is only allowed to estimate systematic updating, then we see these apparent updating strategies.
+![](parameter_recoveryConfEvidence_1001.PNG)
