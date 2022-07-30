@@ -58,3 +58,8 @@ pip install -e .
     - overview open questions
 - design matrix predictors
 - plotting psychometric functions
+
+
+### Summary
+
+$x_{t} = Ax_{t-1} 
