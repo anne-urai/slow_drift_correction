@@ -107,12 +107,15 @@ If we simulate data with only slow drifts, and the model is only allowed to esti
 #### Fitting to real data
 
 If we fit the model to real data (beehives task) we see that the model converged nicely. 
+
 ![](convergence_beehives.png)
 
 This is the estimated slow drift (sudden jumps probably due to switches over participants?)
+
 ![](slowdrift_beehives.png)
 
 These are the estimates for the systematic updating.
 In this order: sensitivity, prev resp, prev conf, prevresp_prevconf, prev sign evidence, prev abs evidence, prevsign_prevabsevi.
 Although it seems that these values are rather small, plotting and testing is needed to see there is still an effect.
+
 ![](params.PNG)
