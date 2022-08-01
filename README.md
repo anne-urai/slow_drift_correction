@@ -43,7 +43,8 @@ pip install -e .
 2. [x] add confidence-scaling (use previous R simulations and fit with ntrials = 500)
 3. [x] fit to real data from Beehives or Squircles task
     - [ ] correlate single-subject beta's with GLM weights
-4. [ ] compare confidence-betas with R output, and with and without fixing sigma at 0
+4. [ ] compare confidence-betas with R output
+    - [x] and with and without fixing sigma at 0
 
 ### Next ideas
 - concatenate all trials across participants, then fit with a switching LDS where the drifting criterion jumps between observers
@@ -68,10 +69,10 @@ $$w_t \sim N(0, \sigma_d)$$
 $$Y_t = CX_t + FU_t + d$$
 
 - $X_t$ is a latent process (i.e. the slow drift) and follows an AR(1) process.
-- $U_t$ is a matrix and contains ~~observed~~ ==input== variables that can influence the latent process (none, in out case)
+- $U_t$ is a matrix and contains ~~observed~~ input variables that can influence the latent process (none, in out case)
 - $b$ is a bias, or intercept
 - $Y_t$ represents the (observed) emissions
-- $U_t$ is a matrix and contains ~~observed~~ ==input variables that can influence the emissions
+- $U_t$ is a matrix and contains ~~observed~~ input variables that can influence the emissions
     - stimulus strenght, previous confidence, previous response...
 - $d$ is a bias, or intercept
 
@@ -91,26 +92,27 @@ Simulations showed good parameter recovery, even for datasets with low number of
 Results were relatively stable over different values of iterations. 
 However, for sigma we see that (1) it increases with the number of trials, (2) it decreases with the number of iterations?
 
-
 ![](recovery_ntrials_niters_AR1.PNG)
  
 
 ### Simulations: systematic updating
-(gonna improve these simulations and plots later)
+> gonna improve these simulations and plots later
 
 If we simulate data with slow drifts and systematic updating of previous response, confidence, sign evidence and absolute evidence we see a nice recovery when the model fits both slow drifts and systematic updating.
 Especially given the fact that this is only with 500 trials (still going to check how this is for more trials)
+
 ![](parameter_recoveryConfEvidence_1111.PNG)
 
 
 ### Simulations: apparent systematic updating
 
-If we simulate data with only slow drifts, and the model is only allowed to estimate systematic updating, then we see these apparent updating strategies. This replicates the earlier simulations in R.
+If we simulate data with only slow drifts, and the model is only allowed to estimate systematic updating, then we see these apparent updating strategies (and an underestimation of the ground truth perceptual sensitivity). This replicates the earlier simulations in R, and the simulations by Lak et al, Mendonca et al, Gupta & Brody.
+
 ![](parameter_recoveryConfEvidence_1001.PNG)
 
 ### Fitting to real data
 
-If we fit the model to real data (beehives task) we see that the model converged nicely. 
+If we fit the model to real data (beehives task), treating all participants as one 'super-participant', we see that the model converged nicely. 
 
 ![](convergence_beehives.png)
 
