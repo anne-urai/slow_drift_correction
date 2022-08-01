@@ -61,9 +61,9 @@ pip install -e .
 
 Following simple linear dynamical system (LDS) is used to disentangle slow drifts from systematic updating:
 
-$$X_t = AX_t-1 + VU_t + b + w_t with w_t ~ N(0,sigma_d)$$
+$$X_t = AX_t-1 + VU_t + b + w_t$$, with $w_t ~ N(0,sigma_d)$
 
-$$Y_t = CX_t + FU_t + d$
+$$Y_t = CX_t + FU_t + d$$
 
 - $X_t$ is a latent process (i.e. the slow drift) and follows an AR(1) process.
 - $U_t$ is a matrix and contains observed variables that can influence the latent process
