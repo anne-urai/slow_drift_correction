@@ -55,21 +55,23 @@ pip install -e .
 - plotting psychometric functions
 
 
-### Summary
+# Summary of progress in Leiden
 
-#### Model
+### Model
 
 Following simple linear dynamical system (LDS) is used to disentangle slow drifts from systematic updating:
 
-$$X_t = AX_t-1 + VU_t + b + w_t$$, with $w_t ~ N(0,sigma_d)$
+$$X_t = AX_{t-1} + VU_t + b + w_t$$
+with 
+$$w_t \sim N(0, \sigma_d)$$
 
 $$Y_t = CX_t + FU_t + d$$
 
 - $X_t$ is a latent process (i.e. the slow drift) and follows an AR(1) process.
-- $U_t$ is a matrix and contains observed variables that can influence the latent process
+- $U_t$ is a matrix and contains ~~observed~~ ==input== variables that can influence the latent process (none, in out case)
 - $b$ is a bias, or intercept
 - $Y_t$ represents the (observed) emissions
-- $U_t$ is a matrix and contains observed variables that can influence the emissions
+- $U_t$ is a matrix and contains ~~observed~~ ==input variables that can influence the emissions
     - stimulus strenght, previous confidence, previous response...
 - $d$ is a bias, or intercept
 
@@ -77,11 +79,13 @@ $A$ is fixed to 1, imposing a random walk. $V$ and $b$ are fixed to 0, and sigma
 The other parameters are estimated using the Expectation-Maximization algorithm (EM).
 
 With these parameters the model can be rewritten as:
-$$Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)$$
+$$Y_t = d + FU_t + C(X_{t-1} + w_t)$$ 
+with 
+$$w_t \sim N(0, \sigma_d)$$
 
-$Y_t$ is then transformed by a logistic function $(1/1+exp(-Y_t))$ and represents the probability of a 'right' response in a Bernoulli model.
+$Y_t$ is then transformed by a logistic function $\frac{1}{1+e^{(-Y_t)}}$ and represents the probability of a 'rightwards' response in a Bernoulli model.
 
-#### Simulations: ntrials and niters
+### Simulations: ntrials and niters
 
 Simulations showed good parameter recovery, even for datasets with low number of trials (n=500).
 Results were relatively stable over different values of iterations. 
@@ -91,7 +95,7 @@ However, for sigma we see that (1) it increases with the number of trials, (2) i
 ![](recovery_ntrials_niters_AR1.PNG)
  
 
-#### Simulations: systematic updating
+### Simulations: systematic updating
 (gonna improve these simulations and plots later)
 
 If we simulate data with slow drifts and systematic updating of previous response, confidence, sign evidence and absolute evidence we see a nice recovery when the model fits both slow drifts and systematic updating.
@@ -99,12 +103,12 @@ Especially given the fact that this is only with 500 trials (still going to chec
 ![](parameter_recoveryConfEvidence_1111.PNG)
 
 
-#### Simulations: apparent systematic updating
+### Simulations: apparent systematic updating
 
 If we simulate data with only slow drifts, and the model is only allowed to estimate systematic updating, then we see these apparent updating strategies. This replicates the earlier simulations in R.
 ![](parameter_recoveryConfEvidence_1001.PNG)
 
-#### Fitting to real data
+### Fitting to real data
 
 If we fit the model to real data (beehives task) we see that the model converged nicely. 
 
