@@ -61,25 +61,25 @@ pip install -e .
 
 Following simple linear dynamical system (LDS) is used to disentangle slow drifts from systematic updating:
 
-X_t = AX_t-1 + VU_t + b + w_t with w_t ~ N(0,sigma_d)
+$$X_t = AX_t-1 + VU_t + b + w_t with w_t ~ N(0,sigma_d)$$
 
-Y_t = CX_t + FU_t + d
+$$Y_t = CX_t + FU_t + d$
 
-- `X_t` is a latent process (i.e. the slow drift) and follows an AR(1) process.
-- `U_t` is a matrix and contains observed variables that can influence the latent process
-- `b` is a bias, or intercept
-- `Y_t` represents the (observed) emissions
-- `U_t` is a matrix and contains observed variables that can influence the emissions
+- $X_t$ is a latent process (i.e. the slow drift) and follows an AR(1) process.
+- $U_t$ is a matrix and contains observed variables that can influence the latent process
+- $b$ is a bias, or intercept
+- $Y_t$ represents the (observed) emissions
+- $U_t$ is a matrix and contains observed variables that can influence the emissions
     - stimulus strenght, previous confidence, previous response...
-- `d` is a bias, or intercept
+- $d$ is a bias, or intercept
 
-A is fixed to 1, imposing a random walk. V and b are fixed to 0, and sigma is estimated analytically.
+$A$ is fixed to 1, imposing a random walk. $V$ and $b$ are fixed to 0, and sigma is estimated analytically.
 The other parameters are estimated using the Expectation-Maximization algorithm (EM).
 
 With these parameters the model can be rewritten as:
-Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)
+$$Y_t = d + FU_t + C(X_t-1 + w_t) with w_t ~ N(0,sigma_d)$$
 
-Y_t is then transformed by a logistic function (1/1+exp(-Y_t)) and represents the probability of a 'right' response in a Bernoulli model.
+$Y_t$ is then transformed by a logistic function $(1/1+exp(-Y_t))$ and represents the probability of a 'right' response in a Bernoulli model.
 
 #### Simulations: ntrials and niters
 
