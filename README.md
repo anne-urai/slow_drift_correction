@@ -30,6 +30,7 @@ $$w_t \sim N(0, \sigma_d)$$
 
 $$Y_t = CX_t + FU_t + d$$
 
+
 - $X_t$ is a latent process (i.e. the slow drift) and follows an AR(1) process.
 - $U_t$ is a matrix and contains input variables that can influence the latent process (none, in our case)
 - $b$ is a bias, or intercept
@@ -37,6 +38,7 @@ $$Y_t = CX_t + FU_t + d$$
 - $U_t$ is a matrix and contains input variables that can influence the emissions
     - stimulus strenght, previous confidence, previous response...
 - $d$ is a bias, or intercept
+
 
 $A$ is fixed to 1, imposing a random walk. $V$ and $b$ are fixed to 0, and sigma is estimated analytically.
 The other parameters are estimated using the Expectation-Maximization algorithm (EM).
@@ -58,14 +60,14 @@ We simulated 20 datasets with a varying number of trials. Model was fitted with 
 Simulations showed good parameter recovery, even for datasets with low number of trials (n=500).
 However, sigma seems hard to estimate. In addition, we see an interesting trade-off between sigma and C. The lower sigma, the higher C get, and vice versa.
 
-![](recovery_n_trials.PNG)
+![](recovery_n_trials.pdf)
  
 ### Simulations: number of iterations
 
 20 datasets were simulated with 500 trials each. Number of iterations does not seem to play a role for most parameters.
 Also here we see a trade-off between sigma and C (albeit less clear due to scaling).
 
-![](recovery_n_iterations.PNG)
+![](recovery_n_iterations.pdf)
 
 ### Simulations: systematic updating
 > gonna improve these simulations and plots later
@@ -104,15 +106,17 @@ Although it seems that these values are rather small, plotting and testing is ne
 - Why is a random walk imposed on the latent process instead of fitting the AR(1) coefficient?
     - Now `A = 1` and `C` is fitted
 - Would the estimation work with only 500 trial per participant? Or would a switching LDS where the drifting criterion jumps between observers be better?
+- How is the analytical computation of sigma done? And why analytical?
+- How to interpret `C`, `sigma`, and their trade-off mechanism? 
 
-- how is the analytical computation of sigma done? why analytical 
-(estimated sigma seems to increase with higher number of trials -  insert image)? 
-- how to interpret `C` (sometimes negative) and `sigma`? 
-- why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
-- why all these functions with `noInput` and not use the default function of the package?
-- why is the slow drift in data simulation mean centered?
-    - if we don't center we get something like this:
+![](tradeoff_sigma_C.pdf)
+
+- Why is the slow drift in data simulation mean centered?
+    - If we don't center we get something like this:
 ![](non_centered_drift.png)
+
+- Why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
+
 
 
 
