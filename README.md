@@ -60,14 +60,14 @@ We simulated 20 datasets with a varying number of trials. Model was fitted with 
 Simulations showed good parameter recovery, even for datasets with low number of trials (n=500).
 However, sigma seems hard to estimate. In addition, we see an interesting trade-off between sigma and C. The lower sigma, the higher C get, and vice versa.
 
-![](recovery_n_trials.pdf)
+![](recovery_n_trials.PNG)
  
 ### Simulations: number of iterations
 
 20 datasets were simulated with 500 trials each. Number of iterations does not seem to play a role for most parameters.
 Also here we see a trade-off between sigma and C (albeit less clear due to scaling).
 
-![](recovery_n_iterations.pdf)
+![](recovery_n_iterations.PNG)
 
 ### Simulations: systematic updating
 > gonna improve these simulations and plots later
@@ -109,7 +109,7 @@ Although it seems that these values are rather small, plotting and testing is ne
 - How is the analytical computation of sigma done? And why analytical?
 - How to interpret `C`, `sigma`, and their trade-off mechanism? 
 
-![](tradeoff_sigma_C.pdf)
+![](tradeoff_sigma_C.PNG)
 
 - Why is the slow drift in data simulation mean centered?
     - If we don't center we get something like this:
