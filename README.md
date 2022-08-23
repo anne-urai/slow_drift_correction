@@ -35,7 +35,7 @@ pip install -e .
 - why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
 - would analysis work with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
 - why all these functions with `noInput` and not use the default function of the package?
-- why is drift mean centered in data simulation?
+- why is the slow drift in data simulation mean centered?
 
 ### Plan van aanpak
 1. [x] answer: with our trial counts, can we even expect to get good fits?
@@ -54,6 +54,8 @@ pip install -e .
 ### To do
 - design matrix predictors
 - plotting psychometric functions
+- hypothesis testing for systematic updating
+- fit on squircles dataset
 
 
 # Summary of progress in Leiden
@@ -69,10 +71,10 @@ $$w_t \sim N(0, \sigma_d)$$
 $$Y_t = CX_t + FU_t + d$$
 
 - $X_t$ is a latent process (i.e. the slow drift) and follows an AR(1) process.
-- $U_t$ is a matrix and contains ~~observed~~ input variables that can influence the latent process (none, in out case)
+- $U_t$ is a matrix and contains input variables that can influence the latent process (none, in our case)
 - $b$ is a bias, or intercept
 - $Y_t$ represents the (observed) emissions
-- $U_t$ is a matrix and contains ~~observed~~ input variables that can influence the emissions
+- $U_t$ is a matrix and contains input variables that can influence the emissions
     - stimulus strenght, previous confidence, previous response...
 - $d$ is a bias, or intercept
 
