@@ -65,14 +65,14 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
 class LDS_noInputDynamics(LDS):
     def __init__(self, N, D, M=0):
         
-        # print('M is:')
-        # print(M)
+        print('M is:')
+        print(M)
         
-        # print('N is:')
-        # print(N)
+        print('N is:')
+        print(N)
         
-        # print("D is:")
-        # print(D)
+        print("D is:")
+        print(D)
         
         dynamics = AutoRegressiveNoInput(1, D, M=M)
         emissions = BernoulliEmissions(N, 1, D, M=M)
@@ -106,9 +106,7 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
     #lds.dynamics.Sigmas = np.zeros(lds.dynamics.Sigmas.shape)
 
     
-    
-
-    #lds.emissions.Cs = np.ones((stateDim))  #doesn't work
+    #lds.emissions.Cs = np.ones(lds.emissions.Cs.shape)   #doesn't work
 
     elbos, q = lds.fit(emissions, inputs = inputs, method="laplace_em",
                         variational_posterior="structured_meanfield", 

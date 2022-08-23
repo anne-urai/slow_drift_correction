@@ -12,11 +12,11 @@ import seaborn as sns
 
 # to build our model
 import model_fit, simulate_choices #contains the fitting funcs
-simulate = False
+simulate = True
 
 #%% simulate choice data
 if simulate:
-    ntrials = 500 # original code: 40.000
+    ntrials = 25000 # original code: 40.000
     sens = 10
     bias = -5 # -5 is unbiased
     σd = 0.1
@@ -24,12 +24,16 @@ if simulate:
     w_prevconf = 0
     w_prevconfprevresp = 1
     
+    
+    #### CHANGE .simulate to switch to more complex regimes (with prev evidence or prev conf...)
     inputs, choices, drift = simulate_choices.simulateChoiceRespConf(ntrials, σd = σd, 
                                               sens = sens, bias = bias, 
                                               w_prevresp = w_prevresp, 
                                               w_prevconf = w_prevconf,
                                               w_prevconfprevresp = w_prevconfprevresp)
     
+    # inputs, choices, drift = simulate_choices.simulateChoice(ntrials, σd = σd, 
+    #                                           sens = sens, bias = bias)
                     
     '''
     inputs (array): ntrialsx3, first column is stimulus strength, second column is indicator for 
@@ -107,7 +111,7 @@ else:  # alternative: load real data
 #%% fit the LDS model
 inputDim = np.shape(inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
-n_iters = 500
+n_iters = 100
 predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,inputs, choices,n_iters)
 
 
@@ -144,24 +148,28 @@ sns.despine()
 # does the simulated drift match the predicted drift?
 fig, axs = plt.subplots(1, 1, figsize=(12,4))
 axs.axhline(0, c = "k", ls = ":", lw =2)
-#axs.plot(drift[:], "k", label = "Generative drift")
+axs.plot(drift[:], "k", label = "Generative drift")
 axs.plot(estDrift[:], c = 'firebrick', label = "Estimated drift")
 axs.set(xlabel = "Trials", ylabel = "Decision criterion")
 axs.legend(loc='upper right')
 
-mse = sum((drift - estDrift)**2) / ntrials
+# mse as a metric for distance between simulated and estimated slow drift
+# (as proxy for goodness of fit without looking at the actual plot)
+#mse = sum((drift - estDrift)**2) / ntrials
 
 lds.dynamics.As
 lds.dynamics.Vs
 lds.dynamics.b
-lds.dynamics.mu_init
 lds.dynamics.Sigmas_init
 lds.dynamics.Sigmas
+
 
 lds.emissions.Cs
 lds.emissions.Fs
 lds.emissions.ds # note: positive bias indicates an overall bias towards right responses
 #%% save a clear and helpful fig
+
+
 
 
 

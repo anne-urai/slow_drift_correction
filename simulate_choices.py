@@ -25,15 +25,15 @@ def simDrift(σd, ntrials):
     drift = np.zeros((ntrials,1))
     for i in range(ntrials):
         drift[i] = σd*np.random.randn() + 0.9995*drift[i-1]  if i>0 else σd*np.random.randn()
-    return drift - np.mean(drift)   
-    
+
+    return drift - np.mean(drift)  
 #%%
 def simulateChoice(ntrials,    
                 sens = 10.,       
                 bias = -5.,       
                 σd = 0.01,        
-                pc=0.,            
-                pe=0.,
+                pc=1.,            
+                pe=-1.,
                 seed = 1):
     '''simulates choices from a SDT observer with logisitic noise and trial-history effects
     Args:
