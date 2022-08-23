@@ -17,46 +17,6 @@ pip install -e .
 ```
 
 
-### Open questions
-- what is the minimum number of trials needed to retrieve slow drift + history weights?
-    - How does this depend on the size of the noise sigma?
-- is there a numerical determinant of ELBO convergence? -> no, have to inspect visually
-- how many `num_iter` do we need?
-- how do `predEmissions` compare to binary choices?
-- nice to have: printing function (with explanation of parameters)?
-- does it matter that some trials are deleted due to timed-out responses?
-- what if simulated drift has a AR coef lower than .9995, can the model still account for this given that a random walk being imposed?
-
-### Questions for Diksha
-- why is `A = 1`, rather than estimated (while fitting `C`)? Because now a random walk is imposed
-- how is the analytical computation of sigma done? why analytical 
-(estimated sigma seems to increase with higher number of trials -  insert image)? 
-- how to interpret `C` (sometimes negative) and `sigma`? 
-- why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
-- would analysis work with only 500 trial per participant? or would a switching LDS where the drifting criterion jumps between observers be better?
-- why all these functions with `noInput` and not use the default function of the package?
-- why is the slow drift in data simulation mean centered?
-
-### Plan van aanpak
-1. [x] answer: with our trial counts, can we even expect to get good fits?
-     - [x] try simulations with data-ish parameters
-2. [x] add confidence-scaling (use previous R simulations and fit with ntrials = 500)
-3. [x] fit to real data from Beehives or Squircles task
-    - [ ] correlate single-subject beta's with GLM weights
-4. [ ] compare confidence-betas with R output
-    - [x] and with and without fixing sigma at 0
-
-### Next ideas
-- concatenate all trials across participants, then fit with a switching LDS where the drifting criterion jumps between observers
-- what if the frequency of the slow drift wave changes over time? eg faster oscillations over time, problem because we only fit one AR coef?
-- how does the fitting behave if sigma is not estimated analytically?
-
-### To do
-- design matrix predictors
-- plotting psychometric functions
-- hypothesis testing for systematic updating
-- fit on squircles dataset
-
 
 # Summary of progress in Leiden
 
@@ -82,20 +42,30 @@ $A$ is fixed to 1, imposing a random walk. $V$ and $b$ are fixed to 0, and sigma
 The other parameters are estimated using the Expectation-Maximization algorithm (EM).
 
 With these parameters the model can be rewritten as:
+
 $$Y_t = d + FU_t + C(X_{t-1} + w_t)$$ 
+
 with 
+
 $$w_t \sim N(0, \sigma_d)$$
 
 $Y_t$ is then transformed by a logistic function $\frac{1}{1+e^{(-Y_t)}}$ and represents the probability of a 'rightwards' response in a Bernoulli model.
 
-### Simulations: ntrials and niters
 
+### Simulations: number of trials
+
+We simulated 20 datasets with a varying number of trials. Model was fitted with EM procedure and 100 iterations.
 Simulations showed good parameter recovery, even for datasets with low number of trials (n=500).
-Results were relatively stable over different values of iterations. 
-However, for sigma we see that (1) it increases with the number of trials, (2) it decreases with the number of iterations?
+However, sigma seems hard to estimate. In addition, we see an interesting trade-off between sigma and C. The lower sigma, the higher C get, and vice versa.
 
-![](recovery_ntrials_niters_AR1.PNG)
+![](recovery_n_trials.PNG)
  
+### Simulations: number of iterations
+
+20 datasets were simulated with 500 trials each. Number of iterations does not seem to play a role for most parameters.
+Also here we see a trade-off between sigma and C (albeit less clear due to scaling).
+
+![](recovery_n_iterations.PNG)
 
 ### Simulations: systematic updating
 > gonna improve these simulations and plots later
@@ -127,3 +97,55 @@ In this order: sensitivity, prev resp, prev conf, prevresp_prevconf, prev sign e
 Although it seems that these values are rather small, plotting and testing is needed to see there is still an effect.
 
 ![](params.PNG)
+
+
+
+### Questions for Diksha
+- Why is a random walk imposed on the latent process instead of fitting the AR(1) coefficient?
+    - Now `A = 1` and `C` is fitted
+- Would the estimation work with only 500 trial per participant? Or would a switching LDS where the drifting criterion jumps between observers be better?
+
+- how is the analytical computation of sigma done? why analytical 
+(estimated sigma seems to increase with higher number of trials -  insert image)? 
+- how to interpret `C` (sometimes negative) and `sigma`? 
+- why is `estDrift` computed by multiplying `Cs`? Sort of scaling to compensate for A = 1?
+- why all these functions with `noInput` and not use the default function of the package?
+- why is the slow drift in data simulation mean centered?
+    - if we don't center we get something like this:
+![](non_centered_drift.png)
+
+
+
+
+### Open questions
+- what is the minimum number of trials needed to retrieve slow drift + history weights?
+    - How does this depend on the size of the noise sigma?
+- is there a numerical determinant of ELBO convergence? -> no, have to inspect visually
+- how many `num_iter` do we need?
+- how do `predEmissions` compare to binary choices?
+- nice to have: printing function (with explanation of parameters)?
+- does it matter that some trials are deleted due to timed-out responses?
+- what if simulated drift has a AR coef lower than .9995, can the model still account for this given that a random walk being imposed?
+
+
+### Plan van aanpak
+1. [x] answer: with our trial counts, can we even expect to get good fits?
+     - [x] try simulations with data-ish parameters
+2. [x] add confidence-scaling (use previous R simulations and fit with ntrials = 500)
+3. [x] fit to real data from Beehives or Squircles task
+    - [ ] correlate single-subject beta's with GLM weights
+4. [ ] compare confidence-betas with R output
+    - [x] and with and without fixing sigma at 0
+
+### Next ideas
+- concatenate all trials across participants, then fit with a switching LDS where the drifting criterion jumps between observers
+- what if the frequency of the slow drift wave changes over time? eg faster oscillations over time, problem because we only fit one AR coef?
+- how does the fitting behave if sigma is not estimated analytically?
+
+### To do
+- design matrix predictors
+- plotting psychometric functions
+- hypothesis testing for systematic updating
+- fit on squircles dataset
+
+
