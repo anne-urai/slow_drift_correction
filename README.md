@@ -105,7 +105,7 @@ Although it seems that these values are rather small, plotting and testing is ne
 ### Questions for Diksha
 - Why is a random walk imposed on the latent process instead of fitting the AR(1) coefficient?
     - Now `A = 1` and `C` is fitted
-- Would the estimation work with only 500 trial per participant? Or would a switching LDS where the drifting criterion jumps between observers be better?
+- Would the estimation work with only 500 trial per participant? Or would a switching LDS where the drifting criterion jumps between observers be better? We could confirm by checking if the estimated state transitions occur where the data of a new participant starts.
 - How is the analytical computation of sigma done? And why analytical?
 - How to interpret `C`, `sigma`, and their trade-off mechanism? 
 
