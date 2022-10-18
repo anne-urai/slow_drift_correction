@@ -1,0 +1,1 @@
+drift coef .98, sigma .4, no sys updating, LDS

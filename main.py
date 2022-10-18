@@ -11,8 +11,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # to build our model
-import model_fit, simulate_choices, model_fit_updating_not_estimated #contains the fitting funcs
+import model_fit, model_fitAR_hierarchical, simulate_choices #contains the fitting funcs
+
+
 simulate = True
+fitAR = False # fit model where AR coef for slow drifts is estimated, else original Gupta
 
 # see https://github.com/lindermanlab/ssm/blob/master/notebooks/1b%20Simple%20Linear%20Dynamical%20System.ipynb
 # see also https://github.com/lindermanlab/ssm/blob/master/ssm/lds.py#L825
@@ -92,23 +95,25 @@ simulate = True
 # even though the parameters are the same, look whats wrong here. maybe something with intercept?
 #%% simulate choice data
 if simulate:
-    ntrials = 2000 # original code: 40.000
-    sens = 15
+    ntrials = 10000 # original code: 40.000
+    sens = 10
     bias = 0 #is unbiased # if effect coded simulations 0 is unbiased!
-    σd = 0.3
+    σd = 0.05
     
     
-    w_prevresp = 0
+    w_prevresp = 1
     w_prevconf = 0
-    w_prevrespconf = 0
+    w_prevrespconf = 1
     w_prevsignevi = 0
     w_prevabsevi = 0
     w_prevsignabsevi = 0
     
-
+    
     
     inputs, choices, drift = simulate_choices.simulateChoice_normalEvi_slowdriftConf(ntrials,
                                               estimateUpdating = True,
+                                              fixedConfCriterion = False,
+                                              postDecisionalEvi = True,
                                               σd = σd, 
                                               sens = sens, bias = bias, 
                                               w_prevresp = w_prevresp, 
@@ -116,8 +121,9 @@ if simulate:
                                               w_prevrespconf = w_prevrespconf,
                                               w_prevsignevi = w_prevsignevi,
                                               w_prevabsevi = w_prevabsevi,
-                                              w_prevsignabsevi = w_prevsignabsevi)
-    # pc = 1
+                                              w_prevsignabsevi = w_prevsignabsevi,
+                                              seed = 2)
+    # pc = 0
     # pe = 0
 
     # inputs, choices, drift = simulate_choices.simulateChoice(ntrials, σd = σd, 
@@ -174,9 +180,14 @@ else:  # load real data
 #%% fit the LDS model
 inputDim = np.shape(inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
-n_iters = 500
-predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,inputs, choices,n_iters)
+n_iters = 200
 
+
+if fitAR:
+    predEmissions, estDrift, lds, q, elbos = model_fitAR_hierarchical.initLDSandFitAR(inputDim,inputs, choices,n_iters)
+
+else:
+    predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,inputs, choices,n_iters)
 
 # check autocorrelation of input variables
 s = inputs[:,0]
@@ -225,8 +236,8 @@ sns.despine()
 # does the simulated drift match the predicted drift?
 fig, axs = plt.subplots(1, 1, figsize=(12,4))
 axs.axhline(0, c = "k", ls = ":", lw =2)
-axs.plot(drift[:1000], "k", label = "Generative drift")
-axs.plot(estDrift[:1000], c = 'firebrick', label = "Estimated drift")
+axs.plot(drift[:], "k", label = "Generative drift")
+axs.plot(estDrift[:], c = 'firebrick', label = "Estimated drift")
 axs.set(xlabel = "Trials", ylabel = "Decision criterion")
 axs.legend(loc='upper center', bbox_to_anchor=(.5, 1.25),ncol=2, fancybox=True, shadow=True)
 
@@ -242,7 +253,7 @@ lds.dynamics.Sigmas
 
 
 lds.emissions.Cs
-lds.emissions.Fs
+t = lds.emissions.Fs
 lds.emissions.ds # positive bias indicates an overall bias towards right responses
 
 
@@ -252,17 +263,17 @@ lds.emissions.ds # positive bias indicates an overall bias towards right respons
 
 
 
-# df_input = pd.DataFrame(inputs)
-# df_input.to_csv("df_input.csv")
+df_input = pd.DataFrame(inputs)
+df_input.to_csv("df_input.csv")
 
-# df_choices = pd.DataFrame(choices)
-# df_choices.to_csv("df_choices.csv")
+df_choices = pd.DataFrame(choices)
+df_choices.to_csv("df_choices.csv")
 
-# df_drift = pd.DataFrame(drift)
-# df_drift.to_csv("df_drift.csv")
+df_drift = pd.DataFrame(drift)
+df_drift.to_csv("df_drift.csv")
 
-# df_estdrift = pd.DataFrame(estDrift)
-# df_estdrift.to_csv("df_estdrift.csv")
+df_estdrift = pd.DataFrame(estDrift)
+df_estdrift.to_csv("df_estdrift.csv")
 
 
 

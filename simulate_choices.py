@@ -24,7 +24,7 @@ def simDrift(σd, ntrials):
     '''
     drift = np.zeros((ntrials,1))
     for i in range(ntrials):
-        drift[i] = σd*np.random.randn() + .99 * drift[i-1]  if i>0 else 0
+        drift[i] = σd*np.random.randn() + .9995 * drift[i-1]  if i>0 else 0
         
     #return drift - np.mean(drift)  # original Gupta
     
@@ -147,6 +147,8 @@ cf. psychophysicial kernels beehives
 
 def simulateChoice_normalEvi_slowdriftConf(ntrials, 
                  estimateUpdating = True,
+                 fixedConfCriterion = False,
+                 postDecisionalEvi = True,
                  sens = 10.,       
                  bias = 0.,       
                  σd = 0.1,
@@ -201,20 +203,32 @@ def simulateChoice_normalEvi_slowdriftConf(ntrials,
         
         
         # response 
+        # sens governs the steepness of the psychometric function
+        # in SDT this would affect the width of the stimulus distribution,
+        # the higher sens, the smaller the distribution
         pR = sigmoid(sens*df.evidence1[i] + crit)
-        choice = np.random.rand() < pR # draw from bernoulli with probability right response
         
+        choice = np.random.rand() < pR # draw from bernoulli with probability right response
+
         # calculation confidence (prev confidence)
         # we want confidence between -1 (sure error) and 1 (sure correct), with 0 being guess
         # if sens*evidence is equal to crit then sigmoid will result in .5
         # so we subtract -.5 to get this to 0 (confidence when guessing)
         
+        if fixedConfCriterion: 
+            crit = 0
+            
         sample1 = sigmoid(sens*df.evidence1[i] + crit) - .5
         sample2 = sigmoid(sens*df.evidence2[i] + crit) - .5
         # if choice[0] (right choice) then add up because two samples will be positive when correct
         # else (left choice), add up and change sign because sum will be negative if correct choice
-        prevconf = (sample1 + sample2) if choice[0] else -(sample1 + sample2)
         
+        if postDecisionalEvi:
+            prevconf = (sample1 + sample2) if choice[0] else -(sample1 + sample2)
+            
+        else:
+            prevconf = sample1 if choice[0] else -sample1
+            
         # previous response
         prevresp = (2*choice - 1) # +1 right, -1 left
         

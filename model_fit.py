@@ -136,7 +136,7 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
                 Sigmas[k] = Sigmas[i]
     
         # Update params via their setter
-        self.As = As
+        #self.As = As
         #self.Vs = Vs
         #self.bs = bs
         self.Sigmas = Sigmas
@@ -148,17 +148,18 @@ class _LinearEmission(_LinearEmissions):
     
     @property
     def params(self):
-        #return self.Cs, self.Fs, self.ds     # original code
+        return self.Cs, self.Fs, self.ds     # original code
         #return self.Fs, self.ds
-        return self.Fs
+        #return self.Fs, self.Cs
+        #return self.Fs
 
     @params.setter
     def params(self, value):
-        #self.Cs, self.Fs, self.ds = value    # original code
-        self.Fs = value
-        #self.Cs = value
+        self.Cs, self.Fs, self.ds = value    # original code
+        #self.Fs, self.Cs = value
         #self.Fs, self.ds = value
-
+        #self.Fs = value
+    
     def _initialize_with_pca(self, datas, inputs=None, masks=None, tags=None, num_iters=20):
         Keff = 1 if self.single_subspace else self.K
 
@@ -185,8 +186,8 @@ class _LinearEmission(_LinearEmissions):
             ds.append(pca.mean_)
 
         # Find the components with the largest power
-        # self.Cs = np.array(Cs)
-        # self.ds = np.array(ds)
+        self.Cs = np.array(Cs)
+        self.ds = np.array(ds)
 
         return pca
 
@@ -239,15 +240,15 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
     
     # note: everything that is not specified (in this case Cs, d, F, and sigma) is fitted
     
-    #lds.dynamics.A = np.ones((stateDim,stateDim))           # dynamics
+    lds.dynamics.A = np.ones((stateDim,stateDim))           # dynamics
     lds.dynamics.b = np.zeros(stateDim)                     # bias
     lds.dynamics.mu_init = np.zeros((stateDim,stateDim))    # initial mu
     lds.dynamics.Sigmas_init = np.array([[[0.01]]])         # initial sigma
     lds.dynamics.Vs = np.array([[np.zeros(inputDim)]])      # input dynamics
     
 
-    lds.emissions.Cs = np.array([[[1]]])
-    lds.emissions.ds = np.array([[[0]]]) # if simulation is not effect coded ds = 0 is huge bias! should be -sens/2
+    #lds.emissions.Cs = np.array([[[1]]])
+    #lds.emissions.ds = np.array([[[0]]]) # if simulation is not effect coded ds = 0 is huge bias! should be -sens/2
     #lds.emissions.Fs = np.array([[np.zeros(inputDim)]])
     
     
@@ -259,7 +260,7 @@ def initLDSandFit(inputDim, inputs, emissions,n_iters):
     elbos, q = lds.fit(emissions, inputs = inputs, method="laplace_em",
                         variational_posterior="structured_meanfield", 
                         continuous_optimizer='newton',
-                        initialize=False, 
+                        initialize=True, 
                         num_init_restarts=1,
                         num_iters=n_iters, 
                         alpha=0.1)

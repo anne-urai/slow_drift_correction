@@ -1,0 +1,2 @@
+AR coef estimated, intercept, and all systematic updating
+drift .9995, sigma = .1

@@ -1,0 +1,4 @@
+90 subjects, 500 trials each
+Drift not mean-corrected, AR .9995
+
+Prevrespconf = 1

@@ -1,0 +1,7 @@
+Drift not mean correct, AR coef .9995
+10000 trials
+sens = 10
+bias = 0
+sigma = .1
+
+all systematic updating = 0
