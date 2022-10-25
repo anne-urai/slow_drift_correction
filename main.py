@@ -15,7 +15,7 @@ import model_fit, model_fitAR_hierarchical, simulate_choices #contains the fitti
 
 
 simulate = True
-fitAR = False # fit model where AR coef for slow drifts is estimated, else original Gupta
+fitAR = True # fit model where AR coef for slow drifts is estimated, else original Gupta
 
 # see https://github.com/lindermanlab/ssm/blob/master/notebooks/1b%20Simple%20Linear%20Dynamical%20System.ipynb
 # see also https://github.com/lindermanlab/ssm/blob/master/ssm/lds.py#L825
@@ -98,7 +98,7 @@ if simulate:
     ntrials = 10000 # original code: 40.000
     sens = 10
     bias = 0 #is unbiased # if effect coded simulations 0 is unbiased!
-    σd = 0.05
+    σd = 0.1
     
     
     w_prevresp = 1
@@ -111,8 +111,8 @@ if simulate:
     
     
     inputs, choices, drift = simulate_choices.simulateChoice_normalEvi_slowdriftConf(ntrials,
-                                              estimateUpdating = True,
-                                              fixedConfCriterion = False,
+                                              estimateUpdating = False,
+                                              fixedConfCriterion = True,
                                               postDecisionalEvi = True,
                                               σd = σd, 
                                               sens = sens, bias = bias, 
@@ -122,7 +122,7 @@ if simulate:
                                               w_prevsignevi = w_prevsignevi,
                                               w_prevabsevi = w_prevabsevi,
                                               w_prevsignabsevi = w_prevsignabsevi,
-                                              seed = 2)
+                                              seed = 5)
     # pc = 0
     # pe = 0
 
@@ -149,7 +149,7 @@ else:  # load real data
     #data = pd.read_csv('df_squircles_slowdrift.csv')
     #data = pd.read_csv('simData_slowdriftR.csv') #from R slow drift script -> slow drift, conf influenced by slow drift, no systematic updating
     #data = pd.read_csv('simData_slowdriftR_fixedconf.csv')
-
+    
     
     print(data.columns)
     
@@ -263,17 +263,17 @@ lds.emissions.ds # positive bias indicates an overall bias towards right respons
 
 
 
-df_input = pd.DataFrame(inputs)
-df_input.to_csv("df_input.csv")
+# df_input = pd.DataFrame(inputs)
+# df_input.to_csv("df_input.csv")
 
-df_choices = pd.DataFrame(choices)
-df_choices.to_csv("df_choices.csv")
+# df_choices = pd.DataFrame(choices)
+# df_choices.to_csv("df_choices.csv")
 
-df_drift = pd.DataFrame(drift)
-df_drift.to_csv("df_drift.csv")
+# df_drift = pd.DataFrame(drift)
+# df_drift.to_csv("df_drift.csv")
 
-df_estdrift = pd.DataFrame(estDrift)
-df_estdrift.to_csv("df_estdrift.csv")
+# df_estdrift = pd.DataFrame(estDrift)
+# df_estdrift.to_csv("df_estdrift.csv")
 
 
 
