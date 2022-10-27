@@ -8,7 +8,7 @@ see https://codeocean.com/capsule/0617593/tree/v1
 """
 
 
-import numpy as np
+import autograd.numpy as np
 import autograd.numpy.random as npr
 
 
@@ -18,8 +18,8 @@ from ssm.observations import AutoRegressiveObservations, _AutoRegressiveObservat
 from ssm.preprocessing import pca_with_imputation, interpolate_data
 from ssm.transitions import StationaryTransitions
 from ssm.init_state_distns import InitialStateDistribution
-from ssm.util import ensure_args_are_lists
-from ssm import hierarchical
+from ssm.util import ensure_args_are_lists, random_rotation
+
 import copy
 
 from autograd.scipy.stats import norm
@@ -37,6 +37,7 @@ from autograd import grad
 # Model structure latent slow drifts
 class AutoRegressiveNoInput(AutoRegressiveObservations):
     
+
     def m_step(self, expectations, datas, inputs, masks, tags,
                 continuous_expectations=None, **kwargs):
 
@@ -78,7 +79,7 @@ class AutoRegressiveNoInput(AutoRegressiveObservations):
                 Sigmas[k] = Sigmas[i]
     
         # Update params via their setter
-        self.As = As
+        #self.As = As
         #self.Vs = Vs
         #self.bs = bs
         self.Sigmas = Sigmas
@@ -151,17 +152,16 @@ class BernoulliEmission(_BernoulliEmissionsMixin, _LinearEmission):
         return -1 * hess
     
 #%%
-class _Hierarchical(object):
-    """
-    Base class for hierarchical models.  Maintains a parent class and a
-    bunch of children with their own perturbed parameters.
-    """
+
+class HierarchicalObservations(AutoRegressiveNoInput):
+    
     def __init__(self, base_class, *args, tags=(None,), lmbda=0.01, **kwargs):
         
-        #self.lags = lags
+        super(HierarchicalObservations, self).__init__(*args,**kwargs)
+        
         # Variance of child params around parent params
         self.lmbda = lmbda
-    
+
         # Top-level parameters (parent)
         self.parent = base_class(*args, **kwargs)
 
@@ -171,7 +171,8 @@ class _Hierarchical(object):
         for tag in tags:
             ch = self.children[tag] = base_class(*args, **kwargs)
             ch.params = tuple(prm + np.sqrt(lmbda) * npr.randn(*prm.shape) for prm in self.parent.params)
-
+        
+        
     @property
     def params(self):
         prms = (self.parent.params,)
@@ -242,10 +243,7 @@ class _Hierarchical(object):
 
         self.params = \
             optimizer(grad(_objective), self.params, num_iters=num_iters, **kwargs)
-
-# we add AutoRegressiveNoInput to solve: AttributeError: 'HierarchicalObservations' object has no attribute 'neg_hessian_expected_log_dynamics_prob'
-class HierarchicalObservations(_Hierarchical,AutoRegressiveNoInput,AutoRegressiveObservations):
-
+            
     def log_likelihoods(self, data, input, mask, tag):
         return self.children[tag].log_likelihoods(data, input, mask, tag)
 
@@ -254,8 +252,6 @@ class HierarchicalObservations(_Hierarchical,AutoRegressiveNoInput,AutoRegressiv
 
     def smooth(self, expectations, data, input, tag):
         return self.children[tag].smooth(expectations, data, input, tag)
-    
-
 
 
 
@@ -264,9 +260,9 @@ class HierarchicalObservations(_Hierarchical,AutoRegressiveNoInput,AutoRegressiv
 class LDS_noInputDynamics(LDS):
     def __init__(self, N, D, M=0):
         
+        dynamics = HierarchicalObservations(AutoRegressiveNoInput,1,D,M=M)
+        #emissions = HierarchicalEmissions(BernoulliEmission,N, 1, D, M=M)
         
-        
-        dynamics = HierarchicalObservations(AutoRegressiveNoInput,1, 1, 1)
         #dynamics = AutoRegressiveNoInput(1, D, M=M)
         emissions = BernoulliEmission(N, 1, D, M=M)
 
@@ -281,28 +277,32 @@ class LDS_noInputDynamics(LDS):
 
 
 #%%
-def initLDSandFitAR(inputDim, inputs, emissions,n_iters):
+def initLDSandFitAR(inputDim, inputs, emissions,n_iters,tag):
     
     stateDim = 1
     lds = LDS_noInputDynamics(1, 1, M = inputDim)
-
+    
 
     # AttributeError: 'HierarchicalObservations' object has no attribute 'bs'
+    lds.dynamics.A = np.ones((stateDim,stateDim))           # dynamics
     lds.dynamics.b = np.zeros(stateDim)                     # bias
     lds.dynamics.mu_init = np.zeros((stateDim,stateDim))    # initial mu
     lds.dynamics.Sigmas_init = np.array([[[0.01]]])         # initial sigma
     lds.dynamics.Vs = np.array([[np.zeros(inputDim)]])      # input dynamics
     
+    lds.dynamics.parent = AutoRegressiveNoInput(1,1,M=inputDim)
+    lds.dynamics.tags = tag
 
-    lds.emissions.Cs = np.array([[[1]]])
-    lds.emissions.ds = np.array([[[0]]]) # if simulation is not effect coded ds = 0 is huge bias! should be -sens/2
+    #lds.dynamics.parent.initialize(inputs=inputs)
+    
+    #lds.emissions.Cs = np.array([[[1]]])
+    #lds.emissions.ds = np.array([[[0]]]) # if simulation is not effect coded ds = 0 is huge bias! should be -sens/2
     #lds.emissions.Fs = np.array([[np.zeros(inputDim)]])
     
     
     # if model shouldn't fit slow drift then: 
     # lds.dynamics.Sigmas_init = np.array([[[0]]])         # initial sigma
     # lds.dynamics.Sigmas = np.zeros(lds.dynamics.Sigmas.shape)
-
 
     elbos, q = lds.fit(emissions, inputs = inputs, method="laplace_em",
                         variational_posterior="structured_meanfield", 

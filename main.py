@@ -14,7 +14,7 @@ import seaborn as sns
 import model_fit, model_fitAR_hierarchical, simulate_choices #contains the fitting funcs
 
 
-simulate = True
+simulate = False
 fitAR = True # fit model where AR coef for slow drifts is estimated, else original Gupta
 
 # see https://github.com/lindermanlab/ssm/blob/master/notebooks/1b%20Simple%20Linear%20Dynamical%20System.ipynb
@@ -101,9 +101,9 @@ if simulate:
     σd = 0.1
     
     
-    w_prevresp = 1
+    w_prevresp = 0
     w_prevconf = 0
-    w_prevrespconf = 1
+    w_prevrespconf = 0
     w_prevsignevi = 0
     w_prevabsevi = 0
     w_prevsignabsevi = 0
@@ -112,7 +112,7 @@ if simulate:
     
     inputs, choices, drift = simulate_choices.simulateChoice_normalEvi_slowdriftConf(ntrials,
                                               estimateUpdating = False,
-                                              fixedConfCriterion = True,
+                                              fixedConfCriterion = False,
                                               postDecisionalEvi = True,
                                               σd = σd, 
                                               sens = sens, bias = bias, 
@@ -160,7 +160,9 @@ else:  # load real data
     # in case of NA on first line
     #df = df.iloc[1: , :] #remove first trial
     
-        
+    subj = df.subj.to_numpy()  # for tags
+    
+    
     evidence = df.evidence.to_numpy() # scaled between -1 and 1 (with -1 being left evidence, 1 right evidence, 0 would be ambigious no evidence trial)
     # prevresp = df.prevresp.to_numpy() # -1 left, 1 right
     # prevconf = df.prevconf.to_numpy() # continuous scale between -1 and 1, -1 sure error, 1 sure correct, 0 guess
@@ -170,8 +172,8 @@ else:  # load real data
     # prevsignabsevi = df.prevsignabsevi.to_numpy() # interaction prevsign and prevabsevi
     
     # this is the format that the fitting func needs - vstack as np arrays
-    #inputs = np.vstack([evidence, prevresp, prevconf, prevrespconf, prevsignevi, prevabsevi, prevsignabsevi]).T
-    inputs = np.vstack([evidence]).T
+    #inputs = np.vstack([subj,evidence, prevresp, prevconf, prevrespconf, prevsignevi, prevabsevi, prevsignabsevi]).T
+    inputs = np.vstack([subj,evidence]).T
 
     choices = np.vstack(np.asarray(df.resp.tolist()).T)
 
@@ -184,7 +186,8 @@ n_iters = 200
 
 
 if fitAR:
-    predEmissions, estDrift, lds, q, elbos = model_fitAR_hierarchical.initLDSandFitAR(inputDim,inputs, choices,n_iters)
+
+    predEmissions, estDrift, lds, q, elbos = model_fitAR_hierarchical.initLDSandFitAR(inputDim,inputs, choices,n_iters,subj) # tags = here?
 
 else:
     predEmissions, estDrift, lds, q, elbos = model_fit.initLDSandFit(inputDim,inputs, choices,n_iters)
