@@ -12,7 +12,7 @@ from ssm.util import ensure_args_are_lists, ensure_args_not_none, \
     replicate, collapse, ssm_pbar
 
 import ssm.observations as obs
-import ssm.hierarchical as hier
+import ssm.HierarchicalAutoRegressiveObservations as hier
 import ssm.transitions as trans
 import ssm.init_state_distns as isd
 

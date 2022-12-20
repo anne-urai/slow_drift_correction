@@ -906,73 +906,73 @@ class SLDS(object):
 
 
 
-    # from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L700
-    @ensure_args_are_lists
-    def fit(self, datas, inputs, masks=None, tags=None, verbose=2,
-            method="em", initialize=True, num_iters = 10, **kwargs):
-      
-        _fitting_methods = \
-            dict(stochastic_em_conj=self._fit_stochastic_em_conjugate)
-
-        if method not in _fitting_methods:
-            raise Exception("Invalid method: {}. Options are {}".
-                            format(method, _fitting_methods.keys()))
-
-        # Initialize the model parameters
-        if initialize:
-            self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_iters)
-
-        # TODO: Move this!
-        if isinstance(self.transitions,
-                      trans.ConstrainedStationaryTransitions):
-            if method != "em":
-                raise Exception("Only EM is implemented "
-                                "for Constrained transitions.")
-
-        return _fitting_methods[method](
-            datas, inputs=inputs, masks=masks, tags=tags, verbose=verbose, **kwargs)
-    
-    
+    # # from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L700
     # @ensure_args_are_lists
-    # def fit(self, datas, inputs=None, masks=None, tags=None, verbose = 2,
-    #         method="laplace_em", variational_posterior="structured_meanfield",
-    #         variational_posterior_kwargs=None,
-    #         initialize=True, num_init_iters=25,
-    #         **kwargs):
+    # def fit(self, datas, inputs, masks=None, tags=None, verbose=2,
+    #         method="em", initialize=True, num_iters = 10, **kwargs):
+      
+    #     _fitting_methods = \
+    #         dict(stochastic_em_conj=self._fit_stochastic_em_conjugate)
 
-    #     """
-    #     There are many possible algorithms one could run.  We have only implemented
-    #     two here:
-    #         - Laplace variational EM, i.e. a structured mean field algorithm where
-    #           we approximate the posterior on continuous states with a Gaussian
-    #           using the mode of the expected log likelihood and the curvature around
-    #           the mode.  This seems to work well for a variety of nonconjugate models,
-    #           and it has the advantage of relaxing to exact EM for the case of
-    #           Gaussian linear dynamical systems.
-
-    #         - Black box variational inference (BBVI) with mean field or structured
-    #           mean field variational posteriors.  This doesn't seem like a very
-    #           effective fitting algorithm, but it is quite general.
-    #     """
-    #     # Specify fitting methods
-    #     _fitting_methods = dict(laplace_em=self._fit_laplace_em,
-    #                             bbvi=self._fit_bbvi,
-    #                             stochastic_em_conj=self._fit_stochastic_em_conjugate)
-
-    #     # Deprecate "svi" as a method
     #     if method not in _fitting_methods:
-    #         raise Exception("Invalid method: {}. Options are {}".\
+    #         raise Exception("Invalid method: {}. Options are {}".
     #                         format(method, _fitting_methods.keys()))
 
     #     # Initialize the model parameters
     #     if initialize:
-    #         self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_init_iters)
+    #         self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_iters)
 
-    #     # Initialize the variational posterior
-    #     variational_posterior_kwargs = variational_posterior_kwargs or {}
-    #     posterior = self._make_variational_posterior(variational_posterior, datas, inputs, masks, tags, method, **variational_posterior_kwargs)
-    #     elbos = _fitting_methods[method](posterior, datas, inputs, masks, tags, verbose, learning=True, **kwargs)
-    #     return elbos, posterior
+    #     # TODO: Move this!
+    #     if isinstance(self.transitions,
+    #                   trans.ConstrainedStationaryTransitions):
+    #         if method != "em":
+    #             raise Exception("Only EM is implemented "
+    #                             "for Constrained transitions.")
+
+    #     return _fitting_methods[method](
+    #         datas, inputs=inputs, masks=masks, tags=tags, verbose=verbose, **kwargs)
+    
+    
+    @ensure_args_are_lists
+    def fit(self, datas, inputs=None, masks=None, tags=None, verbose = 2,
+            method="laplace_em", variational_posterior="structured_meanfield",
+            variational_posterior_kwargs=None,
+            initialize=True, num_init_iters=25,
+            **kwargs):
+
+        """
+        There are many possible algorithms one could run.  We have only implemented
+        two here:
+            - Laplace variational EM, i.e. a structured mean field algorithm where
+              we approximate the posterior on continuous states with a Gaussian
+              using the mode of the expected log likelihood and the curvature around
+              the mode.  This seems to work well for a variety of nonconjugate models,
+              and it has the advantage of relaxing to exact EM for the case of
+              Gaussian linear dynamical systems.
+
+            - Black box variational inference (BBVI) with mean field or structured
+              mean field variational posteriors.  This doesn't seem like a very
+              effective fitting algorithm, but it is quite general.
+        """
+        # Specify fitting methods
+        _fitting_methods = dict(laplace_em=self._fit_laplace_em,
+                                bbvi=self._fit_bbvi,
+                                stochastic_em_conj=self._fit_stochastic_em_conjugate)
+
+        # Deprecate "svi" as a method
+        if method not in _fitting_methods:
+            raise Exception("Invalid method: {}. Options are {}".\
+                            format(method, _fitting_methods.keys()))
+
+        # Initialize the model parameters
+        if initialize:
+            self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_init_iters)
+
+        # Initialize the variational posterior
+        variational_posterior_kwargs = variational_posterior_kwargs or {}
+        posterior = self._make_variational_posterior(variational_posterior, datas, inputs, masks, tags, method, **variational_posterior_kwargs)
+        elbos = _fitting_methods[method](posterior, datas, inputs, masks, tags, verbose, learning=True, **kwargs)
+        return elbos, posterior
 
     @ensure_args_are_lists
     def approximate_posterior(self, datas, inputs=None, masks=None, tags=None,
@@ -1119,6 +1119,9 @@ class LDS(SLDS):
 
 
     @ensure_args_are_lists
+    # TypeError: log_likelihoods() missing 1 required positional argument: 'x'
+    # https://github.com/lindermanlab/ssm/blob/6c856ad3967941d176eb348bcd490cfaaa08ba60/ssm/emissions.py#L89
+    # x is continuous expectation?
     def log_likelihood(self, datas, inputs=None, masks=None, tags=None):
         """
         Compute the log probability of the data under the current
@@ -1132,6 +1135,8 @@ class LDS(SLDS):
             pi0 = self.init_state_distn.initial_state_distn
             Ps = self.transitions.transition_matrices(data, input, mask, tag)
             log_likes = self.dynamics.log_likelihoods(data, input, mask, tag)
+            log_likes += self.emissions.log_likelihoods(data, input, mask, tag)
+
             ll += hmm_normalizer(pi0, Ps, log_likes)
             assert np.isfinite(ll)
         return ll

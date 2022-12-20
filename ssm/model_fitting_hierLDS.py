@@ -14,6 +14,12 @@ Created on Fri Oct 28 15:49:01 2022
 # N = 1       # number of observed dimensions: only choices. Could add in RT/confidence?
 # M = 3       # input dimensions
 
+# To do:
+# check n_iters
+# random restarts
+# fix parameters to certain values
+# check update hierarchical prior
+# allow different prior variance for Fs[0] (stimulus, perceptual sensitivity)?
 
 
 import pandas as pd
@@ -23,19 +29,19 @@ import seaborn as sns
 import simulate_choices
 import ssm
 
-ntrials = 500 # original code: 40.000
-nsubjects = 10
+ntrials = 50000 # original code: 40.000
+nsubjects = 2
 sens = 10
-bias = 0 #is unbiased # if effect coded simulations 0 is unbiased!
-σd = 0.1
+bias = 0 # is unbiased if effect coded simulations 0 is unbiased!
+σd = 0.05
 
 
-w_prevresp = 0
-w_prevconf = 0
-w_prevrespconf = 0
-w_prevsignevi = 0
-w_prevabsevi = 0
-w_prevsignabsevi = 0
+w_prevresp = 1
+w_prevconf = 1
+w_prevrespconf = 1
+w_prevsignevi = 1
+w_prevabsevi = 1
+w_prevsignabsevi = 1
 
 
 # a hierarchical model needs its input organised in a tuple, with subsets for each subject, and a separate variable indicating the tags
@@ -73,7 +79,7 @@ for sub in range(nsubjects):
 inputDim = np.shape(d_inputs)[1] # observed input dimensions 
 stateDim = 1 # latent states
 lags = 1
-n_iters = 20
+n_iters = 50
 
 
 
@@ -89,38 +95,51 @@ lds = ssm.LDS(1,1, M = inputDim, dynamics="hierarchical_ar",
 lps = lds.fit(datas = t_choices,
                     inputs = t_inputs, 
                     masks = None,
-                    method = "stochastic_em_conj",
-                    num_init_iters = n_iters,
-                    initialize = True,
+                    method = "laplace_em",
+                    num_iters = n_iters,
+                    initialize = False,
                     tags = t_tags)
-lds.dynamics.As
-lds.dynamics.Vs
-lds.dynamics.bs
+
+# AR dynamics
+tag = 0
+
+lds.dynamics.global_ar_model.As
+lds.dynamics.global_ar_model.Vs
+lds.dynamics.global_ar_model.bs
+lds.dynamics.global_ar_model.Sigmas
 
 # per subject (tags)
-lds.dynamics.get_As(1)
-lds.dynamics.get_Vs(0)
-lds.dynamics.get_bs(0)
+lds.dynamics.per_group_ar_models[tag].As
+lds.dynamics.per_group_ar_models[tag].Vs
+lds.dynamics.per_group_ar_models[tag].bs
+lds.dynamics.per_group_ar_models[tag].Sigmas
 
-# parameters can't be updated!
-lds.emissions.Cs
-lds.emissions.Fs
-lds.emissions.ds
+
+
+# Bernoulli emissions
+lds.emissions.global_bernoulli_model.Cs
+lds.emissions.global_bernoulli_model.Fs
+lds.emissions.global_bernoulli_model.ds
 
 # per subject (tags)
-lds.emissions.get_Cs(0)
-lds.emissions.get_Fs(0)
-lds.emissions.get_ds(0)
+lds.emissions.per_group_bernoulli_models[tag].Cs
+lds.emissions.per_group_bernoulli_models[tag].Fs
+lds.emissions.per_group_bernoulli_models[tag].ds
 
 
 
 # Variational Posterior allows estimation drift!!!!
+
+# still need to fix this!
+# see variational.py line 343
+# try in a for 
 from ssm.variational import SLDSStructuredMeanFieldVariationalPosterior
 
 q_full = SLDSStructuredMeanFieldVariationalPosterior(
        lds,
        datas=[data for data in t_choices],
-       inputs=[inpt for inpt in t_inputs])
+       inputs=[inpt for inpt in t_inputs],
+       tags = t_tags)
 
 drift_each_pp = q_full.mean_continuous_states
 
@@ -129,7 +148,7 @@ drift_each_pp = q_full.mean_continuous_states
 
 tag = 2
 state_means = q_full.mean_continuous_states[tag]
-#estDrift = np.squeeze(lds.emissions.Cs)*state_means[:]
+estDrift = np.squeeze(lds.emissions.per_group_bernoulli_models[tag].Cs)*state_means[:]
 estDrift = state_means[:]
 
 fig, axs = plt.subplots(1, 1, figsize=(12,4))
@@ -143,20 +162,26 @@ axs.legend(loc='upper center', bbox_to_anchor=(.5, 1.25),ncol=2, fancybox=True, 
 
 
 
-#tags=[data['tag'] for data in full_datas]
-full_elbos = rslds.approximate_posterior(
-    q_full,
-    datas=[data['y'] for data in full_datas],
-    masks=[data['m'] for data in full_datas],
-    tags=[data['tag'] for data in full_datas],
-    num_iters=args.N_full_iter)
+# #tags=[data['tag'] for data in full_datas]
+# full_elbos = rslds.approximate_posterior(
+#     q_full,
+#     datas=[data['y'] for data in full_datas],
+#     masks=[data['m'] for data in full_datas],
+#     tags=[data['tag'] for data in full_datas],
+#     num_iters=args.N_full_iter)
 
 
 
-
-
-
-
+D = 1
+lags = 1
+K = 1
+mean_A = None
+bcast_and_repeat = lambda x, k: np.repeat(x[None, ...], k, axis=0)
+if mean_A is None:
+    mean_A = bcast_and_repeat(
+        np.concatenate((np.zeros((D * (lags - 1), D)),
+                        np.eye(D))), K)
+mean_A.shape
 lps[0][-1] 
 
 # lds.approximate_posterior(datas = t_choices,inputs = t_inputs, tags = t_tags)
@@ -165,12 +190,12 @@ lps[0][-1]
 lds.dynamics.per_group_ar_models[0].As
 
 
-lds.
+
 lds.params
 # estDrift = np.squeeze(lds.emissions.Cs)*state_means[:]
 
 # # Smooth the data under the variational posterior (to compute emissions)
-predEmissions = np.concatenate(lds.smooth(state_means, emissions, input = inputs))
+#predEmissions = np.concatenate(lds.smooth(state_means, emissions, input = inputs))
 # 
 # lds.emissions.get_Cs(0)
 

@@ -81,8 +81,6 @@ class HierarchicalBernoulliEmissions(BernoulliEmission): # or Emissions?
 
     def initialize(self, datas, inputs=None, masks=None, tags=None):
         
-
-        
         # Initialize with linear regressions
         self.global_bernoulli_model.initialize(datas, inputs, masks, tags)
         self._update_hierarchical_prior()

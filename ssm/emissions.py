@@ -100,8 +100,6 @@ class Emissions(object):
   
 
 
-
-
 class BernoulliEmission(Emissions):
     def __init__(self, N, K, D, M=0, 
                  mean_Cs=None,
@@ -115,19 +113,15 @@ class BernoulliEmission(Emissions):
         
         super(BernoulliEmission, self).__init__(N, K, D, M=M, single_subspace=single_subspace)
 
+        
+        mean_Cs = np.ones((1, N, D)) if mean_Cs is None else mean_Cs * np.ones((1, N, D))
+        mean_Fs = np.zeros((1, N, M)) if mean_Fs is None else mean_Fs * np.ones((1, N, M))
+        mean_ds = np.zeros((1, N)) if mean_ds is None else mean_ds * np.ones((1, N))
+        
 
-        # if np.zeros then we get a singular matrix so should differ from 0!
-        # TODO: fix this such that we also draw a value for Cs in global model
-        # is this correct? see HierarchicalBernoulliEmissions _update_hierarchical_prior (line 164)
-        # aren't we resetting the prior to 1 all the time then?
-        mean_Cs = np.ones((1, N, D))
-        mean_Fs = np.ones((1, N, M))
-        mean_ds = np.ones((1, N))
- 
-    
         self.set_prior(mean_Cs, variance_Cs,
-                       mean_Fs, variance_Fs,
-                       mean_ds, variance_ds)
+                        mean_Fs, variance_Fs,
+                        mean_ds, variance_ds)
  
     
         # Initialize the dynamics 
@@ -196,7 +190,6 @@ class BernoulliEmission(Emissions):
     def params(self, value):
         self.Cs, self.Fs, self.ds = value
     
-    # TODO: change dimension params that belong to observations (K,D,D) to emission params (N,D,M), see above   
     def set_prior(self, mean_Cs, variance_Cs,
                         mean_Fs, variance_Fs,
                         mean_ds, variance_ds):
@@ -239,10 +232,9 @@ class BernoulliEmission(Emissions):
                                   mean_Fs / variance_Fs,
                                   mean_ds[..., None] / variance_ds], axis=2)
 
-        # TODO: (KEEP AN EYE ON WHETHER THIS IS IMPORTANT) Note:  we have to transpose h0 per convention in other AR classes
         self.h0 = np.swapaxes(self.h0, -1, -2)
 
-    
+
     # added from observations
     def compute_sample_size(self, datas, inputs, masks, tags):
         """
@@ -319,12 +311,7 @@ class BernoulliEmission(Emissions):
             lr = LinearRegression(fit_intercept=False)
             lr.fit(np.vstack(inputs), np.vstack(datas))
             self.Fs = np.tile(lr.coef_[None, :, :], (Keff, 1, 1))
-    
-        # shouldn't everything be concatenated?
-        #data = np.concatenate(datas) 
-        #input = np.concatenate(inputs)
-        
-        
+            
         # Compute residual after accounting for input
         resids = [data - np.dot(input, self.Fs[0].T) for data, input in zip(datas, inputs)]
     
@@ -341,7 +328,7 @@ class BernoulliEmission(Emissions):
         datas = [interpolate_data(data, mask) for data, mask in zip(datas, masks)]
         yhats = [self.link(np.clip(d, .1, .9)) for d in datas]
         self._initialize_with_pca(yhats, inputs=inputs, masks=masks, tags=tags)
-    
+        
     def log_likelihoods(self, data, input, mask, tag, x):
         assert data.dtype == bool or (data.dtype == int and data.min() >= 0 and data.max() <= 1)
         assert self.link_name == "logit", "Log likelihood is only implemented for logit link."
@@ -512,6 +499,7 @@ class BernoulliEmission(Emissions):
                 ds[k] = ds[i] + 0.01 * npr.randn(*ds[i].shape)
 
         # Update parameters via their setter
+        # self.Cs = np.ones((1, 1, D)) # to fix Cs to 1
         self.Cs = Cs
         self.Fs = Fs
         self.ds = ds
@@ -1127,6 +1115,13 @@ class _PoissonEmissionsMixin(object):
     def log_likelihoods(self, data, input, mask, tag, x):
         assert data.dtype == int
         lambdas = self.mean(self.forward(x, input, tag))
+        mask = np.ones_like(data, dtype=bool) if mask is None else mask
+        lls = -gammaln(data[:,None,:] + 1) -lambdas + data[:,None,:] * np.log(lambdas)
+        return np.sum(lls * mask[:, None, :], axis=2)
+    
+    def log_likelihoods(self, data, input, mask, tag):
+        assert data.dtype == int
+        lambdas = self.mean(self.forward(input, tag))
         mask = np.ones_like(data, dtype=bool) if mask is None else mask
         lls = -gammaln(data[:,None,:] + 1) -lambdas + data[:,None,:] * np.log(lambdas)
         return np.sum(lls * mask[:, None, :], axis=2)

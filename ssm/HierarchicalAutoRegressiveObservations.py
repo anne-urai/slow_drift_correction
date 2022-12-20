@@ -47,9 +47,9 @@ class HierarchicalAutoRegressiveObservations(AutoRegressiveObservations):
     """
     def __init__(self, K, D, M=0, lags=1,
                  cond_variance_A=0.001,
-                 cond_variance_V=0.001,
+                 cond_variance_V=0.001, 
                  cond_variance_b=0.001,
-                 cond_dof_Sigma=10,
+                 cond_dof_Sigma=0.1,
                  tags=(None,)):
 
         super().__init__(K, D, M)
@@ -185,7 +185,7 @@ class HierarchicalAutoRegressiveObservations(AutoRegressiveObservations):
 
     def _m_step_global(self):
         # Note: we could explore smarter averaging techniques for estimating
-        #       the global parameters.  E.g. using uncertainty estimages for
+        #       the global parameters.  E.g. using uncertainty estimates for
         #       the per-group parameters in a hierarchical Bayesian fashion.
         self.global_ar_model.As = np.mean([ar.As for ar in self.per_group_ar_models], axis=0)
         self.global_ar_model.Vs = np.mean([ar.Vs for ar in self.per_group_ar_models], axis=0)

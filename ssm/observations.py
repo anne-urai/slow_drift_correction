@@ -13,6 +13,9 @@ from ssm.cstats import robust_ar_statistics
 from ssm.optimizers import adam, bfgs, rmsprop, sgd, lbfgs, convex_combination
 import ssm.stats as stats
 
+# Fix Vs and bs to zero, we only want As to be fitted!
+# Changes made on line 201, 229, and 579
+
 class Observations(object):
     # K = number of discrete states
     # D = number of observed dimensions
@@ -195,6 +198,8 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
         else:
             mean_A = mean_A * np.ones((K, D, D * lags))
             
+        # mean_V = np.zeros((K, D, M)) # to fix param to 0
+        # mean_b = np.zeros((K, D))
         mean_V = np.zeros((K, D, M)) if mean_V is None else mean_V * np.ones((K, D, M))
         mean_b = np.zeros((K, D)) if mean_b is None else mean_b * np.ones((K, D))
 
@@ -221,7 +226,9 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
             self.As = spstats.norm.rvs(mean_A, np.sqrt(variance_A))
             self.Vs = spstats.norm.rvs(mean_V, np.sqrt(variance_V))
             self.bs = spstats.norm.rvs(mean_b, np.sqrt(variance_b))
-
+            # self.Vs = spstats.norm.rvs(mean_V, 0) # to fix param to 0
+            # self.bs = spstats.norm.rvs(mean_b, 0)
+            
             Sigmas = self.Sigmas.copy()
             for k in range(self.K):
                 # nu = dof_Sigma + D + 1
@@ -569,6 +576,8 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
 
         # Update parameters via their setter
         self.As = As
+        # self.Vs = np.zeros((K, D, M)) # to fix param to 0
+        # self.bs = np.zeros((K, D))
         self.Vs = Vs
         self.bs = bs
         self.Sigmas = Sigmas
