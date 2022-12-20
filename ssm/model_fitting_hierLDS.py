@@ -95,13 +95,13 @@ lds = ssm.LDS(1,1, M = inputDim, dynamics="hierarchical_ar",
 lps = lds.fit(datas = t_choices,
                     inputs = t_inputs, 
                     masks = None,
-                    method = "laplace_em",
+                    method = "stochastic_em_conj",
                     num_iters = n_iters,
-                    initialize = False,
+                    initialize = True,
                     tags = t_tags)
 
 # AR dynamics
-tag = 0
+tag = 0 # subject
 
 lds.dynamics.global_ar_model.As
 lds.dynamics.global_ar_model.Vs

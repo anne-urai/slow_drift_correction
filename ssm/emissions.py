@@ -499,8 +499,8 @@ class BernoulliEmission(Emissions):
                 ds[k] = ds[i] + 0.01 * npr.randn(*ds[i].shape)
 
         # Update parameters via their setter
-        # self.Cs = np.ones((1, 1, D)) # to fix Cs to 1
-        self.Cs = Cs
+        self.Cs = np.ones((1, 1, D)) # to fix Cs to 1
+        #self.Cs = Cs
         self.Fs = Fs
         self.ds = ds
 

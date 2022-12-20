@@ -576,10 +576,10 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
 
         # Update parameters via their setter
         self.As = As
-        # self.Vs = np.zeros((K, D, M)) # to fix param to 0
-        # self.bs = np.zeros((K, D))
-        self.Vs = Vs
-        self.bs = bs
+        self.Vs = np.zeros((K, D, M)) # to fix param to 0
+        self.bs = np.zeros((K, D))
+        # self.Vs = Vs
+        # self.bs = bs
         self.Sigmas = Sigmas
 
     def stochastic_m_step(self, 
