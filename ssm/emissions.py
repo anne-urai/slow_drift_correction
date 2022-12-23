@@ -72,34 +72,11 @@ class Emissions(object):
                           for xt, datat, inputt, maskt in zip(x, data, input, mask)])
         return -1 * terms
 
-    def m_step(self, discrete_expectations, continuous_expectations,
-               datas, inputs, masks, tags,
-               optimizer="bfgs", maxiter=100, **kwargs):
-        """
-        If M-step in Laplace-EM cannot be done in closed form for the emissions, default to SGD.
-        """
-        optimizer = dict(adam=adam, bfgs=bfgs, lbfgs=lbfgs, rmsprop=rmsprop, sgd=sgd)[optimizer]
-
-        # expected log likelihood
-        T = sum([data.shape[0] for data in datas])
-        def _objective(params, itr):
-            self.params = params
-            obj = 0
-            obj += self.log_prior()
-            for data, input, mask, tag, x, (Ez, _, _) in \
-                zip(datas, inputs, masks, tags, continuous_expectations, discrete_expectations):
-                obj += np.sum(Ez * self.log_likelihoods(data, input, mask, tag, x))
-            return -obj / T
-
-        # Optimize emissions log-likelihood
-        self.params = optimizer(_objective, self.params,
-                                num_iters=maxiter,
-                                suppress_warnings=True,
-                                **kwargs)
+    
         
-  
 
 
+# class combines original BernoulliEmissionS and BernoulliEmissionsMixin
 class BernoulliEmission(Emissions):
     def __init__(self, N, K, D, M=0, 
                  mean_Cs=None,
@@ -125,7 +102,7 @@ class BernoulliEmission(Emissions):
  
     
         # Initialize the dynamics 
-        # For global model parameter should just be mean (in this case just zero)
+        # For global model parameter should just be mean
         if initialize.lower() == "global":
             
             self.Cs = mean_Cs
@@ -184,12 +161,13 @@ class BernoulliEmission(Emissions):
 
     @property
     def params(self):
-        return self.Cs, self.Fs, self.ds
+        #return self.Cs, self.Fs, self.ds
+        return self.Fs, self.ds
     
     @params.setter
     def params(self, value):
-        self.Cs, self.Fs, self.ds = value
-    
+        #self.Cs, self.Fs, self.ds = value
+        self.Fs, self.ds = value
     def set_prior(self, mean_Cs, variance_Cs,
                         mean_Fs, variance_Fs,
                         mean_ds, variance_ds):
@@ -234,27 +212,6 @@ class BernoulliEmission(Emissions):
 
         self.h0 = np.swapaxes(self.h0, -1, -2)
 
-
-    # added from observations
-    def compute_sample_size(self, datas, inputs, masks, tags):
-        """
-        Count the number of data points in the given data arrays.
-        This is necessary for the stochastic_m_step function.
-        """
-        return sum([data.shape[0] for data in datas])
-    
-    def log_prior(self):
-
-        lp = np.sum(spstats.norm.logpdf(self.Cs, self.mean_Cs,
-                                        np.sqrt(self.variance_Cs)))
-
-        lp += np.sum(spstats.norm.logpdf(self.Fs, self.mean_Fs,
-                                         np.sqrt(self.variance_Fs)))
-
-        lp += np.sum(spstats.norm.logpdf(self.ds, self.mean_ds,
-                                         np.sqrt(self.variance_ds)))
-
-        return lp
     
     
     def permute(self, perm):
@@ -273,12 +230,15 @@ class BernoulliEmission(Emissions):
         """
         # Invert with the average emission parameters
         
+        # Original code below but error:
+        #ValueError: shapes (1000,7) and (7,1,1) not aligned: 7 (dim 1) != 1 (dim 1)
+        #C, F, d = self.Cs, self.Fs, self.ds
         
-        # C = np.mean(self.Cs, axis=0)
-        # F = np.mean(self.Fs, axis=0)
-        # d = np.mean(self.ds, axis=0)
+        # This works
+        C = np.mean(self.Cs, axis=0)
+        F = np.mean(self.Fs, axis=0)
+        d = np.mean(self.ds, axis=0)
         
-        C, F, d = self.Cs[0], self.Fs[0], self.ds[0]
         C_pseudoinv = np.linalg.solve(C.T.dot(C), C.T).T
 
         # Account for the bias
@@ -368,173 +328,35 @@ class BernoulliEmission(Emissions):
         return -1 * hess
 
 
-
-    # added from observations
-    # TODO: change K,D,M?
-    def expected_sufficient_stats(self, expectations, datas, inputs, masks, tags):
-        K, D, M, lags = self.K, self.D, self.M, 1
-        D_in = D * lags + M + 1
-    
-        # Initialize the outputs
-        ExuxuTs = np.zeros((K, D_in, D_in))
-        ExuyTs = np.zeros((K, D_in, D))
-        EyyTs = np.zeros((K, D, D))
-        Ens = np.zeros(K)
-    
-        # Return early if no data is given
-        if len(expectations) == 0:
-            return ExuxuTs, ExuyTs, EyyTs, Ens
-    
-        # Iterate over data arrays and discrete states
-        for (Ez, _, _), data, input in zip(expectations, datas, inputs):
-            u = input[lags:]
-            y = data[lags:]
-            for k in range(K):
-                w = Ez[lags:, k]
-    
-                # ExuxuTs[k]
-                for l1 in range(lags):
-                    x1 = data[lags-l1-1:-l1-1]
-                    # Cross terms between lagged data and other lags
-                    for l2 in range(l1, lags):
-                        x2 = data[lags - l2 - 1:-l2 - 1]
-                        ExuxuTs[k, l1*D:(l1+1)*D, l2*D:(l2+1)*D] += np.einsum('t,ti,tj->ij', w, x1, x2)
-    
-                    # Cross terms between lagged data and inputs and bias
-                    ExuxuTs[k, l1*D:(l1+1)*D, D*lags:D*lags+M] += np.einsum('t,ti,tj->ij', w, x1, u)
-                    ExuxuTs[k, l1*D:(l1+1)*D, -1] += np.einsum('t,ti->i', w, x1)
-    
-                ExuxuTs[k, D*lags:D*lags+M, D*lags:D*lags+M] += np.einsum('t,ti,tj->ij', w, u, u)
-                ExuxuTs[k, D*lags:D*lags+M, -1] += np.einsum('t,ti->i', w, u)
-                ExuxuTs[k, -1, -1] += np.sum(w)
-    
-                # ExuyTs[k]
-                for l1 in range(lags):
-                    x1 = data[lags - l1 - 1:-l1 - 1]
-                    ExuyTs[k, l1*D:(l1+1)*D, :] += np.einsum('t,ti,tj->ij', w, x1, y)
-                ExuyTs[k, D*lags:D*lags+M, :] += np.einsum('t,ti,tj->ij', w, u, y)
-                ExuyTs[k, -1, :] += np.einsum('t,ti->i', w, y)
-    
-                # EyyTs[k] and Ens[k]
-                EyyTs[k] += np.einsum('t,ti,tj->ij',w,y,y)
-                Ens[k] += np.sum(w)
-    
-        # Symmetrize the expectations
-        for k in range(K):
-            for l1 in range(lags):
-                for l2 in range(l1, lags):
-                    ExuxuTs[k, l2*D:(l2+1)*D, l1*D:(l1+1)* D] = ExuxuTs[k, l1*D:(l1+1)*D, l2*D:(l2+1)*D].T
-                ExuxuTs[k, D*lags:D*lags+M, l1*D:(l1+1)*D] = ExuxuTs[k, l1*D:(l1+1)*D, D*lags:D*lags+M].T
-                ExuxuTs[k, -1, l1*D:(l1+1)*D] = ExuxuTs[k, l1*D:(l1+1)*D, -1].T
-            ExuxuTs[k, -1, D*lags:D*lags+M] = ExuxuTs[k, D*lags:D*lags+M, -1].T
-    
-        return ExuxuTs, ExuyTs, EyyTs, Ens
-    
-
-
-
-    # copied from class AutoRegressiveObservations in ssm.observations
-    def m_step(self, expectations, datas, inputs, masks, tags,
-               sufficient_stats=None, **kwargs):
-        """Compute M-step for Gaussian Auto Regressive Observations.
-
-        If `continuous_expectations` is not None, this function will
-        compute an exact M-step using the expected sufficient statistics for the
-        continuous states. In this case, we ignore the prior provided by (J0, h0),
-        because the calculation is exact. `continuous_expectations` should be a tuple of
-        (Ex, Ey, ExxT, ExyT, EyyT).
-
-        If `continuous_expectations` is None, we use `datas` and `expectations,
-        and (optionally) the prior given by (J0, h0). In this case, we estimate the sufficient
-        statistics using `datas,` which is typically a single sample of the continuous
-        states from the posterior distribution.
+    def m_step(self, discrete_expectations, continuous_expectations,
+               datas, inputs, masks, tags,
+               optimizer="bfgs", maxiter=100, **kwargs):
         """
-        K, D, M, lags = self.K, self.D, self.M, 1
-
-        # Collect sufficient statistics
-        if sufficient_stats is None:
-            ExuxuTs, ExuyTs, EyyTs, Ens = \
-                self.expected_sufficient_stats(expectations,
-                                               datas,
-                                               inputs,
-                                               masks,
-                                               tags)
-        else:
-            # ExuxuTs, ExuyTs, EyyTs, Ens = \
-            #     self._extend_given_sufficient_statistics(expectations, continuous_expectations, inputs)
-            ExuxuTs, ExuyTs, EyyTs, Ens = sufficient_stats
-
-        # Solve the linear regressions
-        #
-        # Note: this is performing the M-step in two stages, first updating
-        #       weights W = (A, V, b) as if the observation variance was identity,
-        #       then updating the variance given the new weights.  This is only an
-        #       issue when there is a non-trivial prior on the weights and the
-        #       covariance matrix, since otherwise the optimal weights are independent
-        #       of the covariance of the errors.  When there is a strong prior, as in a
-        #       hierarchical model, you technically have to account for the covariance
-        #       of the errors when updating weights, since it affects how the prior and
-        #       likelihood are combined.  Alternatively, we could use a conjugate
-        #       matrix-normal-inverse-Wishart (MNIW) prior on (W, Sigma) jointly and
-        #       then solve for the mode of this posterior.
-        Cs = np.zeros((K, D, D * lags))
-        Fs = np.zeros((K, D, M))
-        ds = np.zeros((K, D))
-
-        for k in range(K):
-            Wk = np.linalg.solve(ExuxuTs[k] + self.J0[k], ExuyTs[k] + self.h0[k]).T
-            Cs[k] = Wk[:, :D * lags]
-            Fs[k] = Wk[:, D * lags:-1]
-            ds[k] = Wk[:, -1]
-
-
-        # If any states are unused, set their parameters to a perturbation of a used state
-        unused = np.where(Ens < 1)[0]
-        used = np.where(Ens > 1)[0]
-        if len(unused) > 0:
-            for k in unused:
-                i = npr.choice(used)
-                Cs[k] = Cs[i] + 0.01 * npr.randn(*Cs[i].shape)
-                Fs[k] = Fs[i] + 0.01 * npr.randn(*Fs[i].shape)
-                ds[k] = ds[i] + 0.01 * npr.randn(*ds[i].shape)
-
-        # Update parameters via their setter
-        self.Cs = np.ones((1, 1, D)) # to fix Cs to 1
-        #self.Cs = Cs
-        self.Fs = Fs
-        self.ds = ds
-
-    def stochastic_m_step(self, 
-                          optimizer_state,
-                          total_sample_size,
-                          expectations,
-                          datas,
-                          inputs,
-                          masks,
-                          tags,
-                          step_size=0.5):
+        If M-step in Laplace-EM cannot be done in closed form for the emissions, default to SGD.
         """
-        """
-        # Get the expected sufficient statistics for this minibatch
-        stats = self.expected_sufficient_stats(expectations,
-                                               datas,
-                                               inputs,
-                                               masks,
-                                               tags)
+        optimizer = dict(adam=adam, bfgs=bfgs, lbfgs=lbfgs, rmsprop=rmsprop, sgd=sgd)[optimizer]
+    
+        # expected log_likelihood
+        T = sum([data.shape[0] for data in datas])
+        def _objective(params, itr):
+            self.params = params
+            obj = 0
+            obj += self.log_prior()
+            for data, input, mask, tag, x, (Ez, _, _) in \
+                zip(datas, inputs, masks, tags, continuous_expectations, discrete_expectations):
+                obj += np.sum(Ez * self.log_likelihoods(data, input, mask, tag, x))
+            return -obj / T
+    
+        # Optimize emissions log-likelihood
+        self.params = optimizer(_objective, self.params,
+                                num_iters=maxiter,
+                                suppress_warnings=True,
+                                **kwargs)
 
-        # Scale the stats by the fraction of the sample size
-        this_sample_size = self.compute_sample_size(datas, inputs, masks, tags)
-        stats = tuple(map(lambda x: x * total_sample_size /  this_sample_size, stats))
 
-        # Combine them with the running average sufficient stats
-        if optimizer_state is not None:
-            stats = convex_combination(optimizer_state, stats, step_size)
 
-        # Call the regular m-step with these sufficient statistics
-        self.m_step(None, None, None, None, None, sufficient_stats=stats)
 
-        # Return the update state (i.e. the new stats)
-        return stats
+
 
 
 

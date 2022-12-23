@@ -5,15 +5,6 @@ from ssm.observations import Observations, AutoRegressiveObservations
 from ssm.optimizers import convex_combination
 
 
-# If we add all the code here from the AutoRegressiveObservations we get following error:
-    
-#   File "c:\users\u0141056\ssm\ssm\lds.py", line 830, in __init__
-#     raise TypeError("'dynamics' must be a subclass of"
-
-# TypeError: 'dynamics' must be a subclass of ssm.observations.Observations
-
-
-
 
 # We create a new class here and add it in ssm.lds with the dynamics classes
 # hierarchical_ar = hierAR.HierarchicalAutoRegressiveObservations
@@ -46,9 +37,9 @@ class HierarchicalAutoRegressiveObservations(AutoRegressiveObservations):
     where nu specifies the degrees of freedom.
     """
     def __init__(self, K, D, M=0, lags=1,
-                 cond_variance_A=0.001,
-                 cond_variance_V=0.001, 
-                 cond_variance_b=0.001,
+                 cond_variance_A=.1,
+                 cond_variance_V=.1, 
+                 cond_variance_b=.1,
                  cond_dof_Sigma=0.1,
                  tags=(None,)):
 
@@ -232,54 +223,6 @@ class HierarchicalAutoRegressiveObservations(AutoRegressiveObservations):
         self._m_step_global()
         self._update_hierarchical_prior()
 
-    def stochastic_m_step(self, 
-                          optimizer_state,
-                          total_sample_size,
-                          expectations,
-                          datas,
-                          inputs,
-                          masks,
-                          tags,
-                          step_size=0.5):
-        """
-        """
-        # Get the expected sufficient statistics for this minibatch
-        # Note: this is an array of length num_groups (self.G)
-        #       and entries in the array are None if there is no
-        #       data with the corresponding tag in this minibatch.
-        stats = self.expected_sufficient_stats(expectations,
-                                               datas,
-                                               inputs,
-                                               masks,
-                                               tags)
-
-        # Scale the statistics by the total sample size on a per-group basis
-        this_sample_size = self.compute_sample_size(datas, inputs, masks, tags)
-        for g in range(self.G):
-            if stats[g] is not None:
-                stats[g] = tuple(map(lambda x: x * total_sample_size[g] / this_sample_size[g], stats[g]))
-
-        # Combine them with the running average sufficient stats
-        if optimizer_state is not None:
-            # we've seen some data before, but not necessarily from all groups
-            for g in range(self.G):
-                if optimizer_state[g] is not None and stats[g] is not None:
-                    # we've seen this group before and we have data for it. 
-                    # update its stats.
-                    stats[g] = convex_combination(optimizer_state[g], stats[g], step_size)
-                elif optimizer_state[g] is not None and stats[g] is None:
-                    # we've seen this group before but not in this minibatch.
-                    # pass existing stats through.
-                    stats[g] = optimizer_state[g]
-        else:
-            # first time we're seeing any data.  return this minibatch's stats.
-            pass
-
-        # Call the regular m-step with these sufficient statistics
-        self.m_step(None, None, None, None, None, sufficient_stats=stats)
-
-        # Return the update state (i.e. the new stats)
-        return stats
 
     def sample_x(self, z, xhist, input=None, tag=None, with_noise=True):
         return self.per_group_ar_models[self.tags_to_indices[tag]]. \

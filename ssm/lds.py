@@ -282,180 +282,176 @@ class SLDS(object):
         return self.emissions.smooth(Ez, variational_mean, data, input, tag)
 
 
-    # @ensure_args_are_lists
-    # def log_probability(self, datas, inputs=None, masks=None, tags=None):
-    #     warnings.warn("Cannot compute exact marginal log probability for the SLDS.")
-    #     return np.nan
+    @ensure_args_are_lists
+    def log_probability(self, datas, inputs=None, masks=None, tags=None):
+        warnings.warn("Cannot compute exact marginal log probability for the SLDS.")
+        return np.nan
     
     
     # Copied from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L302
     # Not sure if this is correct!
-    @ensure_args_are_lists
-    def log_probability(self, datas, inputs=None, masks=None, tags=None):
-        return self.log_likelihood(datas, inputs, masks, tags) + self.log_prior()
+    # @ensure_args_are_lists
+    # def log_probability(self, datas, inputs=None, masks=None, tags=None):
+    #     return self.log_likelihood(datas, inputs, masks, tags) + self.log_prior()
 
     
 
-    # added log_likes += self.emissions.log_likelihoods(data, input, mask, tag) in m-step
-    def _fit_stochastic_em(self, optimizer, datas, inputs, masks, tags, verbose = 2, num_epochs=100, **kwargs):
-            """
-            Replace the M-step of EM with a stochastic gradient update using the ELBO computed
-            on a minibatch of data.
-            """
-            M = len(datas)
-            T = sum([data.shape[0] for data in datas])
+    # # added log_likes += self.emissions.log_likelihoods(data, input, mask, tag) in m-step
+    # def _fit_stochastic_em(self, optimizer, datas, inputs, masks, tags, verbose = 2, num_epochs=100, **kwargs):
+    #         """
+    #         Replace the M-step of EM with a stochastic gradient update using the ELBO computed
+    #         on a minibatch of data.
+    #         """
+    #         M = len(datas)
+    #         T = sum([data.shape[0] for data in datas])
     
-            # A helper to grab a minibatch of data
-            perm = [np.random.permutation(M) for _ in range(num_epochs)]
-            def _get_minibatch(itr):
-                epoch = itr // M
-                m = itr % M
-                i = perm[epoch][m]
-                return datas[i], inputs[i], masks[i], tags[i]
+    #         # A helper to grab a minibatch of data
+    #         perm = [np.random.permutation(M) for _ in range(num_epochs)]
+    #         def _get_minibatch(itr):
+    #             epoch = itr // M
+    #             m = itr % M
+    #             i = perm[epoch][m]
+    #             return datas[i], inputs[i], masks[i], tags[i]
     
-            # Define the objective (negative ELBO)
-            def _objective(params, itr):
-                # Grab a minibatch of data
-                data, input, mask, tag = _get_minibatch(itr)
-                Ti = data.shape[0]
+    #         # Define the objective (negative ELBO)
+    #         def _objective(params, itr):
+    #             # Grab a minibatch of data
+    #             data, input, mask, tag = _get_minibatch(itr)
+    #             Ti = data.shape[0]
     
-                # E step: compute expected latent states with current parameters
-                Ez, Ezzp1, _ = self.expected_states(data, input, mask, tag)
+    #             # E step: compute expected latent states with current parameters
+    #             Ez, Ezzp1, _ = self.expected_states(data, input, mask, tag)
     
-                # M step: set the parameter and compute the (normalized) objective function
-                self.params = params
-                pi0 = self.init_state_distn.initial_state_distn
-                log_Ps = self.transitions.log_transition_matrices(data, input, mask, tag)
-                log_likes = self.dynamics.log_likelihoods(data, input, mask, tag)
-                log_likes += self.emissions.log_likelihoods(data, input, mask, tag)
+    #             # M step: set the parameter and compute the (normalized) objective function
+    #             self.params = params
+    #             pi0 = self.init_state_distn.initial_state_distn
+    #             log_Ps = self.transitions.log_transition_matrices(data, input, mask, tag)
+    #             log_likes = self.dynamics.log_likelihoods(data, input, mask, tag)
+    #             log_likes += self.emissions.log_likelihoods(data, input, mask, tag)
     
-                # Compute the expected log probability
-                # (Scale by number of length of this minibatch.)
-                obj = self.log_prior()
-                obj += np.sum(Ez[0] * np.log(pi0)) * M
-                obj += np.sum(Ezzp1 * log_Ps) * (T - M) / (Ti - 1)
-                obj += np.sum(Ez * log_likes) * T / Ti
-                assert np.isfinite(obj)
+    #             # Compute the expected log probability
+    #             # (Scale by number of length of this minibatch.)
+    #             obj = self.log_prior()
+    #             obj += np.sum(Ez[0] * np.log(pi0)) * M
+    #             obj += np.sum(Ezzp1 * log_Ps) * (T - M) / (Ti - 1)
+    #             obj += np.sum(Ez * log_likes) * T / Ti
+    #             assert np.isfinite(obj)
     
-                return -obj / T
+    #             return -obj / T
     
-            # Set up the progress bar
-            lls  = [-_objective(self.params, 0) * T]
-            pbar = ssm_pbar(num_epochs * M, verbose, "Epoch {} Itr {} LP: {:.1f}", [0, 0, lls[-1]])
+    #         # Set up the progress bar
+    #         lls  = [-_objective(self.params, 0) * T]
+    #         pbar = ssm_pbar(num_epochs * M, verbose, "Epoch {} Itr {} LP: {:.1f}", [0, 0, lls[-1]])
     
-            # Run the optimizer
-            step = dict(sgd=sgd_step, rmsprop=rmsprop_step, adam=adam_step)[optimizer]
-            state = None
-            for itr in pbar:
-                self.params, val, g, state = step(value_and_grad(_objective), self.params, itr, state, **kwargs)
-                epoch = itr // M
-                m = itr % M
-                lls.append(-val * T)
-                if verbose == 2:
-                  pbar.set_description("Epoch {} Itr {} LP: {:.1f}".format(epoch, m, lls[-1]))
-                  pbar.update(1)
+    #         # Run the optimizer
+    #         step = dict(sgd=sgd_step, rmsprop=rmsprop_step, adam=adam_step)[optimizer]
+    #         state = None
+    #         for itr in pbar:
+    #             self.params, val, g, state = step(value_and_grad(_objective), self.params, itr, state, **kwargs)
+    #             epoch = itr // M
+    #             m = itr % M
+    #             lls.append(-val * T)
+    #             if verbose == 2:
+    #               pbar.set_description("Epoch {} Itr {} LP: {:.1f}".format(epoch, m, lls[-1]))
+    #               pbar.update(1)
     
-            return lls
+    #         return lls
 
-    # copied from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L552
-    # line 338: added self.emissions, and changed self.observations to self.emissions
-    # in def fit (see below) added stochastic_em_conj to fitting dict
-    def _fit_stochastic_em_conjugate(self, datas, inputs, masks, tags,
-                                         verbose=2,
-                                         num_epochs=100,
-                                         tolerance=0,
-                                         learning_rate=geometric_learning_rate,
-                                         **kwargs):
-            """
-            Fit the parameters with stochastic EM, assuming that the observations
-            and transitions are exponential family distributions with closed-form
-            sufficient statistics.
-            Initialize:
-                - Initialize the running average sufficient statistics.  E.g. set
-                  them to the stats from the prior if you have one, or to zero o.w.
-            E-step:
-                - grab a minibatch of data (e.g. one of your data arrays)
-                - compute E[z_t] and E[z_t, z_{t+1}] for that minibatch
-            M-step:
-                - compute expected sufficient statistics of the transition and
-                  observation models from this minibatch. Note: these are summed
-                  over datapoints in the minibatch.
-                - take a convex combination of ESS from this minibatch and your
-                  running average.
-                - then set parameters to maximize the likelihood using these
-                  averaged sufficent statistics.
-            References:
-                - Cappé, Olivier, and Eric Moulines. "On‐line expectation–maximization
-                  algorithm for latent data models." Journal of the Royal Statistical
-                  Society: Series B (Statistical Methodology) 71.3 (2009): 593-613.
-                - Hoffman, Matthew D., et al. "Stochastic variational inference."
-                  The Journal of Machine Learning Research 14.1 (2013): 1303-1347.
-            TODO:
-                - Specify learning rates
-                - Control how log likelihoods are reported
-            """
-            # Store the log likelihoods (per minibatch)
-            epoch_lps = []
-            inner_lps = []
+    # # copied from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L552
+    # # line 338: added self.emissions, and changed self.observations to self.emissions
+    # # in def fit (see below) added stochastic_em_conj to fitting dict
+    # def _fit_stochastic_em_conjugate(self, datas, inputs, masks, tags,
+    #                                      verbose=2,
+    #                                      num_epochs=100,
+    #                                      tolerance=0,
+    #                                      learning_rate=geometric_learning_rate,
+    #                                      **kwargs):
+    #         """
+    #         Fit the parameters with stochastic EM, assuming that the observations
+    #         and transitions are exponential family distributions with closed-form
+    #         sufficient statistics.
+    #         Initialize:
+    #             - Initialize the running average sufficient statistics.  E.g. set
+    #               them to the stats from the prior if you have one, or to zero o.w.
+    #         E-step:
+    #             - grab a minibatch of data (e.g. one of your data arrays)
+    #             - compute E[z_t] and E[z_t, z_{t+1}] for that minibatch
+    #         M-step:
+    #             - compute expected sufficient statistics of the transition and
+    #               observation models from this minibatch. Note: these are summed
+    #               over datapoints in the minibatch.
+    #             - take a convex combination of ESS from this minibatch and your
+    #               running average.
+    #             - then set parameters to maximize the likelihood using these
+    #               averaged sufficent statistics.
+    #         References:
+    #             - Cappé, Olivier, and Eric Moulines. "On‐line expectation–maximization
+    #               algorithm for latent data models." Journal of the Royal Statistical
+    #               Society: Series B (Statistical Methodology) 71.3 (2009): 593-613.
+    #             - Hoffman, Matthew D., et al. "Stochastic variational inference."
+    #               The Journal of Machine Learning Research 14.1 (2013): 1303-1347.
+    #         TODO:
+    #             - Specify learning rates
+    #             - Control how log likelihoods are reported
+    #         """
+    #         # Store the log likelihoods (per minibatch)
+    #         epoch_lps = []
+    #         inner_lps = []
     
-            # Initialize the progress bars
-            num_datas = len(datas)
-            T_total = sum([data.shape[0] for data in datas])
-            epoch_pbar = ssm_pbar(num_epochs, verbose, "Initializing...", [])
-            inner_pbar = ssm_pbar(num_datas, verbose, "Initializing...", [])
+    #         # Initialize the progress bars
+    #         num_datas = len(datas)
+    #         T_total = sum([data.shape[0] for data in datas])
+    #         epoch_pbar = ssm_pbar(num_epochs, verbose, "Initializing...", [])
+    #         inner_pbar = ssm_pbar(num_datas, verbose, "Initializing...", [])
     
-            # Initialize the sufficient statistics by calling without data
-            distributions = [self.init_state_distn, self.transitions, self.dynamics, self.emissions]
-            m_step_states = [None, None, None, None]
-            total_sample_sizes = [distn.compute_sample_size(datas, inputs, masks, tags) 
-                                  for distn in distributions]
+    #         # Initialize the sufficient statistics by calling without data
+    #         distributions = [self.init_state_distn, self.transitions, self.dynamics, self.emissions]
+    #         m_step_states = [None, None, None, None]
+    #         total_sample_sizes = [distn.compute_sample_size(datas, inputs, masks, tags) 
+    #                               for distn in distributions]
                 
-            # Iterate over minibatches
-            for epoch in epoch_pbar:
-                perm = npr.permutation(num_datas)
-                inner_pbar.reset()
+    #         # Iterate over minibatches
+    #         for epoch in epoch_pbar:
+    #             perm = npr.permutation(num_datas)
+    #             inner_pbar.reset()
     
-                for i in inner_pbar:
-                    # Grab a minibatch of data
-                    j = perm[i]
-                    data, input, mask, tag = datas[j], inputs[j], masks[j], tags[j]
+    #             for i in inner_pbar:
+    #                 # Grab a minibatch of data
+    #                 j = perm[i]
+    #                 data, input, mask, tag = datas[j], inputs[j], masks[j], tags[j]
     
-                    # E step: compute expected latent states with current parameters
-                    #         _for this particular data array_.
-                    expectations = self.expected_states(data, input, mask, tag)
+    #                 # E step: compute expected latent states with current parameters
+    #                 #         _for this particular data array_.
+    #                 expectations = self.expected_states(data, input, mask, tag)
     
-                    # Compute noisy estimate of the total log prob using this minibatch
-                    inner_lps.append(self.log_prior() + expectations[2] * T_total / data.shape[0])
-                    inner_pbar.set_description("LP: {:.1f}".format(inner_lps[-1]))
+    #                 # Compute noisy estimate of the total log prob using this minibatch
+    #                 inner_lps.append(self.log_prior() + expectations[2] * T_total / data.shape[0])
+    #                 inner_pbar.set_description("LP: {:.1f}".format(inner_lps[-1]))
     
-                    # M step: Get expected sufficient statistics for this data
-                    #         and combine them with the running average.
+    #                 # M step: Get expected sufficient statistics for this data
+    #                 #         and combine them with the running average.
     
-                    # convex combo is computed as
-                    # (1 - step_size) * run_avg_stats + step_size * stats_from_this_minibatch
-                    step_size = learning_rate(epoch * num_datas + i)
+    #                 # convex combo is computed as
+    #                 # (1 - step_size) * run_avg_stats + step_size * stats_from_this_minibatch
+    #                 step_size = learning_rate(epoch * num_datas + i)
     
-                    # M step: update the parameters with those stats.
-                    for i, distn in enumerate(distributions):
-                        m_step_states[i] = distn.stochastic_m_step(m_step_states[i], 
-                                                                   total_sample_sizes[i],
-                                                                   [expectations], 
-                                                                   [data], 
-                                                                   [input], 
-                                                                   [mask],
-                                                                   [tag],
-                                                                   step_size=step_size)
+    #                 # M step: update the parameters with those stats.
+    #                 for i, distn in enumerate(distributions):
+    #                     m_step_states[i] = distn.stochastic_m_step(m_step_states[i], 
+    #                                                                total_sample_sizes[i],
+    #                                                                [expectations], 
+    #                                                                [data], 
+    #                                                                [input], 
+    #                                                                [mask],
+    #                                                                [tag],
+    #                                                                step_size=step_size)
                     
-                # Compute the log probability of the full dataset
-                if verbose == 2:
-                    epoch_lps.append(self.log_probability(datas, inputs, masks, tags))
-                    epoch_pbar.set_description("LP: {:.1f}".format(epoch_lps[-1]))
+    #             # Compute the log probability of the full dataset
+    #             if verbose == 2:
+    #                 epoch_lps.append(self.log_probability(datas, inputs, masks, tags))
+    #                 epoch_pbar.set_description("LP: {:.1f}".format(epoch_lps[-1]))
     
-            return epoch_lps, inner_lps
-
-
-
-
+    #         return epoch_lps, inner_lps
 
 
 
@@ -760,10 +756,12 @@ class SLDS(object):
                       masks=xmasks,
                       tags=tags
         )
+        # TODO: should we add hierarchicalAutoRegressiveObservations? R
         exact_m_step_dynamics = [
            obs.AutoRegressiveObservations,
            obs.AutoRegressiveObservationsNoInput,
            obs.AutoRegressiveDiagonalNoiseObservations, 
+           hierAR.HierarchicalAutoRegressiveObservations,
         ]
         if type(self.dynamics) in exact_m_step_dynamics and self.dynamics.lags == 1:
             # In this case, we can do an exact M-step on the dynamics by passing
@@ -777,12 +775,12 @@ class SLDS(object):
             self.dynamics.params = convex_combination(curr_prms, self.dynamics.params, step_size)
 
         # Update emissions params. This is always approximate (at least for now).
-        curr_prms = copy.deepcopy(self.emissions.params)
+        #curr_prms = copy.deepcopy(self.emissions.params)
         self.emissions.m_step(discrete_expectations, continuous_samples,
                               datas, inputs, masks, tags,
                               optimizer=emission_optimizer,
                               maxiter=emission_optimizer_maxiter)
-        self.emissions.params = convex_combination(curr_prms, self.emissions.params, step_size)
+        #self.emissions.params = convex_combination(curr_prms, self.emissions.params, step_size)
 
     def _laplace_em_elbo(self,
                          variational_posterior,
@@ -907,72 +905,77 @@ class SLDS(object):
 
 
     # from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L700
-    @ensure_args_are_lists
-    def fit(self, datas, inputs, masks=None, tags=None, verbose=2,
-            method="em", initialize=True, num_iters = 10, **kwargs):
+    # @ensure_args_are_lists
+    # def fit(self, datas, inputs, masks=None, tags=None, verbose=2,
+    #         method="em", initialize=True, num_iters = 10, **kwargs):
       
-        _fitting_methods = \
-            dict(stochastic_em_conj=self._fit_stochastic_em_conjugate)
+    #     _fitting_methods = \
+    #         dict(stochastic_em_conj=self._fit_stochastic_em_conjugate)
 
-        if method not in _fitting_methods:
-            raise Exception("Invalid method: {}. Options are {}".
-                            format(method, _fitting_methods.keys()))
-
-        # Initialize the model parameters
-        if initialize:
-            self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_iters)
-
-        # TODO: Move this!
-        if isinstance(self.transitions,
-                      trans.ConstrainedStationaryTransitions):
-            if method != "em":
-                raise Exception("Only EM is implemented "
-                                "for Constrained transitions.")
-
-        return _fitting_methods[method](
-            datas, inputs=inputs, masks=masks, tags=tags, verbose=verbose, **kwargs)
-    
-    
-    @ensure_args_are_lists
-    # def fit(self, datas, inputs=None, masks=None, tags=None, verbose = 2,
-    #         method="laplace_em", variational_posterior="structured_meanfield",
-    #         variational_posterior_kwargs=None,
-    #         initialize=True, num_init_iters=25,
-    #         **kwargs):
-
-    #     """
-    #     There are many possible algorithms one could run.  We have only implemented
-    #     two here:
-    #         - Laplace variational EM, i.e. a structured mean field algorithm where
-    #           we approximate the posterior on continuous states with a Gaussian
-    #           using the mode of the expected log likelihood and the curvature around
-    #           the mode.  This seems to work well for a variety of nonconjugate models,
-    #           and it has the advantage of relaxing to exact EM for the case of
-    #           Gaussian linear dynamical systems.
-
-    #         - Black box variational inference (BBVI) with mean field or structured
-    #           mean field variational posteriors.  This doesn't seem like a very
-    #           effective fitting algorithm, but it is quite general.
-    #     """
-    #     # Specify fitting methods
-    #     _fitting_methods = dict(laplace_em=self._fit_laplace_em,
-    #                             bbvi=self._fit_bbvi,
-    #                             stochastic_em_conj=self._fit_stochastic_em_conjugate)
-
-    #     # Deprecate "svi" as a method
     #     if method not in _fitting_methods:
-    #         raise Exception("Invalid method: {}. Options are {}".\
+    #         raise Exception("Invalid method: {}. Options are {}".
     #                         format(method, _fitting_methods.keys()))
 
     #     # Initialize the model parameters
     #     if initialize:
-    #         self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_init_iters)
+    #         self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_iters)
 
-    #     # Initialize the variational posterior
-    #     variational_posterior_kwargs = variational_posterior_kwargs or {}
-    #     posterior = self._make_variational_posterior(variational_posterior, datas, inputs, masks, tags, method, **variational_posterior_kwargs)
-    #     elbos = _fitting_methods[method](posterior, datas, inputs, masks, tags, verbose, learning=True, **kwargs)
-    #     return elbos, posterior
+    #     # TODO: Move this!
+    #     if isinstance(self.transitions,
+    #                   trans.ConstrainedStationaryTransitions):
+    #         if method != "em":
+    #             raise Exception("Only EM is implemented "
+    #                             "for Constrained transitions.")
+
+    #     return _fitting_methods[method](
+    #         datas, inputs=inputs, masks=masks, tags=tags, verbose=verbose, **kwargs)
+    
+    
+    @ensure_args_are_lists
+    def fit(self, datas, inputs=None, masks=None, tags=None, verbose = 2,
+            method="laplace_em", variational_posterior="structured_meanfield",
+            variational_posterior_kwargs=None,
+            initialize=True, num_init_iters=25,
+            **kwargs):
+
+        """
+        There are many possible algorithms one could run.  We have only implemented
+        two here:
+            - Laplace variational EM, i.e. a structured mean field algorithm where
+              we approximate the posterior on continuous states with a Gaussian
+              using the mode of the expected log likelihood and the curvature around
+              the mode.  This seems to work well for a variety of nonconjugate models,
+              and it has the advantage of relaxing to exact EM for the case of
+              Gaussian linear dynamical systems.
+
+            - Black box variational inference (BBVI) with mean field or structured
+              mean field variational posteriors.  This doesn't seem like a very
+              effective fitting algorithm, but it is quite general.
+        """
+        # Specify fitting methods
+        _fitting_methods = dict(laplace_em=self._fit_laplace_em,
+                                bbvi=self._fit_bbvi)
+                                #stochastic_em_conj=self._fit_stochastic_em_conjugate)
+
+        # Deprecate "svi" as a method
+        if method not in _fitting_methods:
+            raise Exception("Invalid method: {}. Options are {}".\
+                            format(method, _fitting_methods.keys()))
+
+        # Initialize the model parameters
+        if initialize:
+            self.initialize(datas, inputs, masks, tags, verbose = verbose, num_iters=num_init_iters)
+
+        # Initialize the variational posterior
+        # Variational posterior allows to approximate the true posterior distribution
+        # It is defined by a set of parameters that we can adjust
+        # By adjusting these parameters, we can try to make the variational distribution as similar as possible to the true posterior distribution.
+        # ~ variational inference: replacing the true posterior distribution with a simpler, approximated distribution
+
+        variational_posterior_kwargs = variational_posterior_kwargs or {}
+        posterior = self._make_variational_posterior(variational_posterior, datas, inputs, masks, tags, method, **variational_posterior_kwargs)
+        elbos = _fitting_methods[method](posterior, datas, inputs, masks, tags, verbose, learning=True, **kwargs)
+        return elbos, posterior
 
     @ensure_args_are_lists
     def approximate_posterior(self, datas, inputs=None, masks=None, tags=None,
@@ -1106,39 +1109,37 @@ class LDS(SLDS):
     def log_prior(self):
         return self.dynamics.log_prior() + self.emissions.log_prior()
 
-    # @ensure_args_are_lists
-    # def log_probability(self, datas, inputs=None, masks=None, tags=None):
-    #     warnings.warn("Log probability of LDS is not yet implemented.")
-    #     return np.nan
+    @ensure_args_are_lists
+    def log_probability(self, datas, inputs=None, masks=None, tags=None):
+        warnings.warn("Log probability of LDS is not yet implemented.")
+        return np.nan
     
     # Copied from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L302
     # Not sure if this is correct!
-    @ensure_args_are_lists
-    def log_probability(self, datas, inputs=None, masks=None, tags=None):
-        return self.log_prior() + self.log_likelihood(datas, inputs, masks, tags)
+    # @ensure_args_are_lists
+    # def log_probability(self, datas, inputs=None, masks=None, tags=None):
+    #     return self.log_prior() + self.log_likelihood(datas, inputs, masks, tags)
 
 
-    @ensure_args_are_lists
-    # TypeError: log_likelihoods() missing 1 required positional argument: 'x'
-    # https://github.com/lindermanlab/ssm/blob/6c856ad3967941d176eb348bcd490cfaaa08ba60/ssm/emissions.py#L89
-    # x is continuous expectation?
-    def log_likelihood(self, datas, inputs=None, masks=None, tags=None):
-        """
-        Compute the log probability of the data under the current
-        model parameters.
+    #@ensure_args_are_lists
+    # Copied from https://github.com/lindermanlab/ssm/blob/e97ea4f0904cd204f392c2cfc4528ef860d71f9d/ssm/hmm.py#L305
+    # def log_likelihood(self, datas, inputs=None, masks=None, tags=None):
+    #     """
+    #     Compute the log probability of the data under the current
+    #     model parameters.
        
-        :param datas: single array or list of arrays of data.
-        :return total log probability of the data.
-        """
-        ll = 0
-        for data, input, mask, tag in zip(datas, inputs, masks, tags):
-            pi0 = self.init_state_distn.initial_state_distn
-            Ps = self.transitions.transition_matrices(data, input, mask, tag)
-            log_likes = self.dynamics.log_likelihoods(data, input, mask, tag)
+    #     :param datas: single array or list of arrays of data.
+    #     :return total log probability of the data.
+    #     """
+    #     ll = 0
+    #     for data, input, mask, tag in zip(datas, inputs, masks, tags):
+    #         pi0 = self.init_state_distn.initial_state_distn
+    #         Ps = self.transitions.transition_matrices(data, input, mask, tag)
+    #         log_likes = self.dynamics.log_likelihoods(data, input, mask, tag)
 
-            ll += hmm_normalizer(pi0, Ps, log_likes)
-            assert np.isfinite(ll)
-        return ll
+    #         ll += hmm_normalizer(pi0, Ps, log_likes)
+    #         assert np.isfinite(ll)
+    #     return ll
  
     def sample(self, T, input=None, tag=None, prefix=None, with_noise=True):
         (_, x, y) = super().sample(T, input=input, tag=tag, prefix=prefix, with_noise=with_noise)

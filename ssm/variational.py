@@ -339,12 +339,11 @@ class SLDSStructuredMeanFieldVariationalPosterior(VariationalPosterior):
         h_ini = np.zeros(D)
         h_dyn_1 = np.zeros((T - 1, D))
         h_dyn_2 = np.zeros((T - 1, D))
-        
-        # TODO: model.emissions uses Cs, Fs and ds to invert, but these are the initial priors (0) so singular fit!
-        # change this 
+
+
         # Set the posterior mean based on the emission model, if possible.
         if self.model.emissions.single_subspace and self.model.emissions.N >= D:
-            h_obs = (1.0 / self.initial_variance) * self.model.emissions.per_group_bernoulli_models[tag]. \
+            h_obs = (1.0 / self.initial_variance) * self.model.emissions. \
                 invert(data, input=input, mask=mask, tag=tag)
         else:
             warn("We can only initialize the continuous states if the emissions lie in a "

@@ -14,7 +14,7 @@ from ssm.optimizers import adam, bfgs, rmsprop, sgd, lbfgs, convex_combination
 import ssm.stats as stats
 
 # Fix Vs and bs to zero, we only want As to be fitted!
-# Changes made on line 201, 229, and 579
+# Changes made on line 201, 229, and 589 and 590
 
 class Observations(object):
     # K = number of discrete states
@@ -136,7 +136,13 @@ class _AutoRegressiveObservationsBase(Observations):
         K, M = self.K, self.M
         T, D = data.shape
         As, bs, Vs, mu0s = self.As, self.bs, self.Vs, self.mu_init
-
+        
+        # added this to solve TypeError: 'numpy.float64' object is not iterable
+        # zip function below needs arrays
+        # As = np.array([As], ndmin=3) 
+        # Vs = np.array([Vs], ndmin=3) 
+        # bs = np.array([bs], ndmin=2) 
+        
         # Instantaneous inputs
         mus = []
         for k, (A, b, V, mu0) in enumerate(zip(As, bs, Vs, mu0s)):
@@ -154,6 +160,8 @@ class _AutoRegressiveObservationsBase(Observations):
             mus.append(np.vstack((mus_k_init, mus_k_ar)))
 
         return np.array(mus)
+    
+    
 
     def smooth(self, expectations, data, input, tag):
         """
@@ -223,11 +231,10 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
                  for _ in range(K)])
 
         elif initialize.lower() == "prior":
-            self.As = spstats.norm.rvs(mean_A, np.sqrt(variance_A))
-            self.Vs = spstats.norm.rvs(mean_V, np.sqrt(variance_V))
-            self.bs = spstats.norm.rvs(mean_b, np.sqrt(variance_b))
-            # self.Vs = spstats.norm.rvs(mean_V, 0) # to fix param to 0
-            # self.bs = spstats.norm.rvs(mean_b, 0)
+            
+            self.As = np.array([spstats.norm.rvs(mean_A, np.sqrt(variance_A))], ndmin=3) 
+            self.Vs = np.array([spstats.norm.rvs(mean_V, np.sqrt(variance_V), M)], ndmin=3) 
+            self.bs = np.array([spstats.norm.rvs(mean_b, np.sqrt(variance_b))], ndmin=2) 
             
             Sigmas = self.Sigmas.copy()
             for k in range(self.K):
@@ -384,8 +391,10 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
         # # Set the variances all at once to use the setter
         self.m_step(expectations, datas, inputs, masks, tags)
 
+   
+
     def log_likelihoods(self, data, input, mask, tag=None):
-        assert np.all(mask), "Cannot compute likelihood of autoregressive obsevations with missing data."
+        assert np.all(mask), "Cannot compute likelihood of autoregressive observations with missing data."
         L = self.lags
         mus = self._compute_mus(data, input, mask, tag)
 
@@ -548,6 +557,7 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
         #       likelihood are combined.  Alternatively, we could use a conjugate
         #       matrix-normal-inverse-Wishart (MNIW) prior on (W, Sigma) jointly and
         #       then solve for the mode of this posterior.
+        
         As = np.zeros((K, D, D * lags))
         Vs = np.zeros((K, D, M))
         bs = np.zeros((K, D))
@@ -578,41 +588,9 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
         self.As = As
         self.Vs = np.zeros((K, D, M)) # to fix param to 0
         self.bs = np.zeros((K, D))
-        # self.Vs = Vs
-        # self.bs = bs
+        #self.Vs = Vs
+        #self.bs = bs
         self.Sigmas = Sigmas
-
-    def stochastic_m_step(self, 
-                          optimizer_state,
-                          total_sample_size,
-                          expectations,
-                          datas,
-                          inputs,
-                          masks,
-                          tags,
-                          step_size=0.5):
-        """
-        """
-        # Get the expected sufficient statistics for this minibatch
-        stats = self.expected_sufficient_stats(expectations,
-                                               datas,
-                                               inputs,
-                                               masks,
-                                               tags)
-
-        # Scale the stats by the fraction of the sample size
-        this_sample_size = self.compute_sample_size(datas, inputs, masks, tags)
-        stats = tuple(map(lambda x: x * total_sample_size /  this_sample_size, stats))
-
-        # Combine them with the running average sufficient stats
-        if optimizer_state is not None:
-            stats = convex_combination(optimizer_state, stats, step_size)
-
-        # Call the regular m-step with these sufficient statistics
-        self.m_step(None, None, None, None, None, sufficient_stats=stats)
-
-        # Return the update state (i.e. the new stats)
-        return stats
 
 
 
@@ -656,6 +634,21 @@ class AutoRegressiveObservations(_AutoRegressiveObservationsBase):
         J_dyn_21 = -1 * np.sum(Ez[1:,:,None,None] * off_diag_terms[None,:], axis=1)
 
         return J_ini, J_dyn_11, J_dyn_21, J_dyn_22
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
